@@ -22,11 +22,13 @@ export async function POST(request: NextRequest) {
     promptId,
     models: modelIds,
     mode,
+    reasoning,
   } = body as {
     prompt?: string;
     promptId?: string;
     models: string[];
     mode: "raw" | "skill";
+    reasoning?: boolean;
   };
 
   // Validate required fields
@@ -112,6 +114,7 @@ export async function POST(request: NextRequest) {
           models,
           mode,
           apiKey,
+          reasoning,
           signal: abortController.signal,
           onProgress: (update) => {
             send("progress", update);

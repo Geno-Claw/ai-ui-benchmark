@@ -2,6 +2,7 @@ export interface ModelConfig {
   id: string;
   openRouterId: string;
   name: string;
+  supportsReasoning?: boolean;
 }
 
 export interface GenerateOptions {
@@ -11,6 +12,7 @@ export interface GenerateOptions {
   temperature?: number;
   apiKey: string;
   signal?: AbortSignal;
+  reasoning?: boolean;
 }
 
 export interface GenerationResult {

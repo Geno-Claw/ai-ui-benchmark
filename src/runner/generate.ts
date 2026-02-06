@@ -14,6 +14,7 @@ export interface BenchmarkOptions {
   variantsPerModel?: number;
   onProgress?: (update: ProgressUpdate) => void;
   signal?: AbortSignal;
+  reasoning?: boolean;
 }
 
 export interface ProgressUpdate {
@@ -122,6 +123,7 @@ export async function runBenchmark(
     variantsPerModel = 5,
     onProgress,
     signal,
+    reasoning,
   } = options;
 
   const runId = await generateRunId(promptTitle, mode);
@@ -165,6 +167,7 @@ export async function runBenchmark(
           mode,
           temperature,
           apiKey,
+          reasoning,
         };
 
         const result = await callOpenRouter(fullPrompt, genOptions, signal);

@@ -7,7 +7,7 @@
 - [x] Tailwind CSS v4 with dark theme by default
 - [x] App Router with `src/` directory structure
 - [x] TypeScript types for all core domain models (ModelConfig, Run, AppState, etc.)
-- [x] Default model configuration (Claude Opus 4.6, Claude Sonnet 4.5, GPT-5.2, Gemini 2.5 Pro)
+- [x] Default model configuration (13 models across 7 providers)
 - [x] Landing page with feature overview
 - [x] Component scaffolding: Gallery, ComparisonSlot, VariantCarousel, SourceView, RunSelector, ModelPicker
 - [x] Runner module stubs: generate, openrouter, prompt-loader, archiver
@@ -115,6 +115,29 @@
 
 ## Planned
 
+### Expanded Model Support (v0.6.0)
+- [x] **13 models** across 7 providers via OpenRouter
+  - Anthropic: Claude Opus 4.6, Claude Sonnet 4.5
+  - OpenAI: GPT-5.2, GPT-5.2 Pro, GPT-5.2 Codex
+  - Google: Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 3 Flash
+  - Others: DeepSeek V3.2, Qwen3 Coder, Kimi K2.5, GLM 4.7, MiniMax M2.1
+- [x] **Model groups** — models organized by provider in the generate panel
+- [x] **3-column grid** layout for model selection to handle 13+ models
+- [x] **Reasoning support** — optional reasoning toggle for GPT-5.2 series models
+  - `supportsReasoning` field on ModelConfig
+  - Toggle appears when at least one selected model supports reasoning
+  - Passes `reasoning.effort: "high"` to OpenRouter API
+- [x] **Deselect all** button alongside select all
+
+### Cost Display (v0.6.0)
+- [x] **Per-variant cost** — displayed in ComparisonSlot toolbar using `formatCost` utility
+- [x] **Token breakdown** — shows input/output tokens separately (e.g., "1,234in/5,678out")
+- [x] **Run-level total cost** — sum of all variant costs shown in Gallery run header
+- [x] **Live cost tracking** — running cost tally during SSE generation progress
+- [x] **Cost on completion** — total cost shown when benchmark completes
+- [x] **formatCost utility** — smart USD formatting ($X.XXXX for < $0.01, $X.XX otherwise, "—" for missing)
+- [x] **OpenRouter cost extraction** — reads `usage.cost` from OpenRouter response (corrected from `usage.total_cost`)
+
 ### Future Enhancements
 - [ ] Side-by-side layout mode (2-4 fixed slots)
 - [x] Client-side search/filter over archived runs
@@ -122,4 +145,4 @@
 - [ ] Export run as zip download
 - [ ] URL-based deep linking to specific run/model/variant
 - [x] Real-time progress via SSE during generation
-- [ ] Additional model support as available on OpenRouter
+- [x] Additional model support as available on OpenRouter

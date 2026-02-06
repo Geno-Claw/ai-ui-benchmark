@@ -20,6 +20,18 @@ export async function callOpenRouter(
       console.log(`[openrouter] ${options.model.id}: retry ${attempt}/${MAX_RETRIES}...`);
     }
     try {
+      // Build request body
+      const body: Record<string, unknown> = {
+        model: options.model.openRouterId,
+        messages: [{ role: "user", content: prompt }],
+        temperature: options.temperature ?? 0.9,
+      };
+
+      // Add reasoning parameter if enabled and model supports it
+      if (options.reasoning && options.model.supportsReasoning) {
+        body.reasoning = { effort: "high" };
+      }
+
       const response = await fetch(OPENROUTER_URL, {
         method: "POST",
         headers: {
@@ -28,11 +40,7 @@ export async function callOpenRouter(
           "HTTP-Referer": "http://localhost:3000",
           "X-Title": "AI UI Benchmark",
         },
-        body: JSON.stringify({
-          model: options.model.openRouterId,
-          messages: [{ role: "user", content: prompt }],
-          temperature: options.temperature ?? 0.9,
-        }),
+        body: JSON.stringify(body),
         signal,
       });
 
@@ -56,12 +64,15 @@ export async function callOpenRouter(
         output: usage.completion_tokens ?? 0,
       };
 
+      // OpenRouter returns cost in usage.cost (USD credits)
+      const cost = usage.cost ?? undefined;
+
       return {
         html: content,
         tokens,
         durationMs: Date.now() - start,
         model: options.model.openRouterId,
-        cost: data.usage?.total_cost ?? undefined,
+        cost,
       };
     } catch (err) {
       lastError =

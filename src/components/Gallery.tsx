@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Run, GenerationResult } from "@/lib/types";
 import { DEFAULT_MODELS } from "@/lib/config";
+import { formatCost } from "@/lib/utils";
 import ComparisonSlot from "./ComparisonSlot";
 
 interface GalleryProps {
@@ -22,6 +23,12 @@ export default function Gallery({ run, onFullscreen }: GalleryProps) {
       modelNameMap[mId] = mId;
     }
   }
+
+  // Calculate total run cost
+  const totalRunCost = run.models.reduce((sum, modelId) => {
+    const results = run.designs[modelId] || [];
+    return sum + results.reduce((mSum, r) => mSum + (r.cost ?? 0), 0);
+  }, 0);
 
   // Track which model each slot shows
   const [slotModels, setSlotModels] = useState<Record<string, string>>(
@@ -45,8 +52,17 @@ export default function Gallery({ run, onFullscreen }: GalleryProps) {
           }`}>
             {run.mode}
           </span>
+          {totalRunCost > 0 && (
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+              Total: {formatCost(totalRunCost)}
+            </span>
+          )}
         </div>
         <p className="text-sm text-gray-500 max-w-3xl line-clamp-2">{run.prompt}</p>
+        <div className="flex items-center gap-4 text-xs text-gray-500">
+          <span>{run.models.length} models · {run.totalVariants} variants</span>
+          <span>{new Date(run.date).toLocaleDateString()}</span>
+        </div>
       </div>
 
       {/* Design grid — one ComparisonSlot per model */}

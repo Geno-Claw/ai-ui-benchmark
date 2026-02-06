@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PromptConfig } from "@/lib/types";
-import { DEFAULT_MODELS } from "@/lib/config";
+import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+import { formatCost } from "@/lib/utils";
 
 interface GeneratePanelProps {
   isOpen: boolean;
@@ -52,6 +53,7 @@ export default function GeneratePanel({
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
+  const [reasoning, setReasoning] = useState(false);
   const [progress, setProgress] = useState<GenerationProgress>({
     status: "idle",
     message: "",
@@ -64,6 +66,13 @@ export default function GeneratePanel({
   const completedTimesRef = useRef<number[]>([]);
   const startTimeRef = useRef<number>(0);
 
+  const modelGroups = getModelGroups();
+
+  // Check if any selected model supports reasoning
+  const anySelectedSupportsReasoning = DEFAULT_MODELS.some(
+    (m) => selectedModels.has(m.id) && m.supportsReasoning
+  );
+
   // Load prompts from API
   useEffect(() => {
     if (isOpen) {
@@ -73,6 +82,13 @@ export default function GeneratePanel({
         .catch(() => setPrompts([]));
     }
   }, [isOpen]);
+
+  // Reset reasoning toggle when no selected model supports it
+  useEffect(() => {
+    if (!anySelectedSupportsReasoning) {
+      setReasoning(false);
+    }
+  }, [anySelectedSupportsReasoning]);
 
   // Extract categories dynamically from loaded prompts
   const categories = Array.from(new Set(prompts.map((p) => p.category)));
@@ -99,6 +115,11 @@ export default function GeneratePanel({
 
   const selectAll = () => {
     setSelectedModels(new Set(DEFAULT_MODELS.map((m) => m.id)));
+  };
+
+  const deselectAll = () => {
+    // Keep at least the first model selected
+    setSelectedModels(new Set([DEFAULT_MODELS[0].id]));
   };
 
   const canGenerate = useCallback(() => {
@@ -160,6 +181,10 @@ export default function GeneratePanel({
         models: Array.from(selectedModels),
         mode,
       };
+
+      if (reasoning && anySelectedSupportsReasoning) {
+        body.reasoning = true;
+      }
 
       if (selectedPromptId === "custom") {
         body.prompt = customPrompt.trim();
@@ -330,7 +355,7 @@ export default function GeneratePanel({
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-[10%] bottom-[10%] max-w-2xl mx-auto z-50 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="fixed inset-x-4 top-[5%] bottom-[5%] max-w-3xl mx-auto z-50 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
           <h2 className="text-lg font-semibold text-white">
@@ -456,55 +481,80 @@ export default function GeneratePanel({
             ) : null}
           </div>
 
-          {/* Model Selection */}
+          {/* Model Selection — grouped by provider */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-300">
-                Models
+                Models{" "}
+                <span className="text-gray-500 font-normal">
+                  ({selectedModels.size} selected)
+                </span>
               </label>
-              <button
-                onClick={selectAll}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-              >
-                Select all
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {DEFAULT_MODELS.map((model) => (
+              <div className="flex items-center gap-2">
                 <button
-                  key={model.id}
-                  onClick={() => toggleModel(model.id)}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
-                    selectedModels.has(model.id)
-                      ? "bg-blue-600/10 border-blue-500/50 text-blue-300"
-                      : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
-                  }`}
+                  onClick={deselectAll}
+                  className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
                 >
-                  <div
-                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      selectedModels.has(model.id)
-                        ? "bg-blue-600 border-blue-500"
-                        : "border-gray-600"
-                    }`}
-                  >
-                    {selectedModels.has(model.id) && (
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  {model.name}
+                  Deselect all
                 </button>
+                <button
+                  onClick={selectAll}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Select all
+                </button>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {modelGroups.map((group) => (
+                <div key={group.label}>
+                  <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-1.5 px-1">
+                    {group.label}
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {group.models.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => toggleModel(model.id)}
+                        className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left transition-all border ${
+                          selectedModels.has(model.id)
+                            ? "bg-blue-600/10 border-blue-500/50 text-blue-300"
+                            : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                        }`}
+                      >
+                        <div
+                          className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                            selectedModels.has(model.id)
+                              ? "bg-blue-600 border-blue-500"
+                              : "border-gray-600"
+                          }`}
+                        >
+                          {selectedModels.has(model.id) && (
+                            <svg
+                              className="w-2.5 h-2.5 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                        <span className="truncate">{model.name}</span>
+                        {model.supportsReasoning && (
+                          <span className="ml-auto text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0" title="Supports reasoning">
+                            🧠
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -544,6 +594,41 @@ export default function GeneratePanel({
             </div>
           </div>
 
+          {/* Reasoning Toggle — only visible when relevant */}
+          {anySelectedSupportsReasoning && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Reasoning
+              </label>
+              <button
+                onClick={() => setReasoning(!reasoning)}
+                className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm text-left transition-all border ${
+                  reasoning
+                    ? "bg-amber-500/10 border-amber-500/40 text-amber-300"
+                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                }`}
+              >
+                <div
+                  className={`w-9 h-5 rounded-full transition-colors relative ${
+                    reasoning ? "bg-amber-500" : "bg-gray-600"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                      reasoning ? "translate-x-4" : "translate-x-0.5"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <div className="font-medium">Enable reasoning</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    Uses high reasoning effort for supported models (GPT-5.2 series). May increase cost and latency.
+                  </div>
+                </div>
+              </button>
+            </div>
+          )}
+
           {/* Summary */}
           <div className="bg-gray-800/50 rounded-lg px-4 py-3 text-sm text-gray-400">
             Will generate{" "}
@@ -552,6 +637,9 @@ export default function GeneratePanel({
             </span>{" "}
             designs ({selectedModels.size} model
             {selectedModels.size !== 1 ? "s" : ""} × 5 variants)
+            {reasoning && (
+              <span className="text-amber-400"> · reasoning enabled</span>
+            )}
           </div>
         </div>
 
@@ -644,7 +732,7 @@ export default function GeneratePanel({
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{percentage}%</span>
                     {(progress.cost ?? 0) > 0 && (
-                      <span>Cost: ${progress.cost!.toFixed(4)}</span>
+                      <span>Cost: {formatCost(progress.cost)}</span>
                     )}
                   </div>
                 </div>
@@ -652,7 +740,7 @@ export default function GeneratePanel({
 
               {/* Per-model status */}
               {progress.status === "generating" && progress.modelStatuses && (
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 gap-1.5">
                   {Object.entries(progress.modelStatuses).map(
                     ([modelId, ms]) => {
                       const modelName =
@@ -715,7 +803,7 @@ export default function GeneratePanel({
               {/* Cost summary on complete */}
               {progress.status === "complete" && (progress.cost ?? 0) > 0 && (
                 <div className="text-xs text-gray-500">
-                  Total cost: ${progress.cost!.toFixed(4)}
+                  Total cost: {formatCost(progress.cost)}
                 </div>
               )}
             </div>

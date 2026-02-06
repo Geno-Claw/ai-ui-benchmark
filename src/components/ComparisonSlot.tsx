@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GenerationResult } from "@/lib/types";
+import { formatCost } from "@/lib/utils";
 import SourceView from "./SourceView";
 import VariantCarousel from "./VariantCarousel";
 import ModelPicker from "./ModelPicker";
@@ -50,7 +51,6 @@ export default function ComparisonSlot({
     );
   }
 
-  const totalTokens = result.tokens.input + result.tokens.output;
   const durationSec = (result.durationMs / 1000).toFixed(1);
 
   return (
@@ -83,20 +83,18 @@ export default function ComparisonSlot({
             </svg>
             {durationSec}s
           </span>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1" title={`${result.tokens.input.toLocaleString()} in / ${result.tokens.output.toLocaleString()} out`}>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
             </svg>
-            {totalTokens.toLocaleString()} tokens
+            {result.tokens.input.toLocaleString()}in/{result.tokens.output.toLocaleString()}out
           </span>
-          {result.cost !== undefined && (
-            <span className="flex items-center gap-1">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              ${result.cost.toFixed(4)}
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {formatCost(result.cost)}
+          </span>
           {result.error && (
             <span className="text-red-400 flex items-center gap-1">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
