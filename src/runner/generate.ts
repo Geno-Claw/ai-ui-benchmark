@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import path from "path";
-import { GenerateOptions, GenerationResult, ModelConfig, Run } from "@/lib/types";
+import { GenerateOptions, GenerationResult, ModelConfig, ReasoningEffort, Run } from "@/lib/types";
 import { VARIANT_TEMPERATURES } from "@/lib/config";
 import { callOpenRouter } from "./openrouter";
 import { loadIndex } from "./archiver";
@@ -14,7 +14,7 @@ export interface BenchmarkOptions {
   variantsPerModel?: number;
   onProgress?: (update: ProgressUpdate) => void;
   signal?: AbortSignal;
-  reasoning?: boolean;
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface ProgressUpdate {
@@ -123,7 +123,7 @@ export async function runBenchmark(
     variantsPerModel = 5,
     onProgress,
     signal,
-    reasoning,
+    reasoningEffort,
   } = options;
 
   const runId = await generateRunId(promptTitle, mode);
@@ -167,7 +167,7 @@ export async function runBenchmark(
           mode,
           temperature,
           apiKey,
-          reasoning,
+          reasoningEffort,
         };
 
         const result = await callOpenRouter(fullPrompt, genOptions, signal);

@@ -1,8 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { PromptConfig } from "@/lib/types";
+import { PromptConfig, ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+
+const REASONING_EFFORTS: { value: ReasoningEffort; label: string; description: string }[] = [
+  { value: "none", label: "Off", description: "No reasoning" },
+  { value: "low", label: "Low", description: "Quick, cheap" },
+  { value: "medium", label: "Medium", description: "Balanced" },
+  { value: "high", label: "High", description: "Thorough" },
+  { value: "xhigh", label: "Max", description: "Maximum quality" },
+];
 import { formatCost } from "@/lib/utils";
 
 interface GeneratePanelProps {
@@ -53,7 +61,7 @@ export default function GeneratePanel({
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
-  const [reasoning, setReasoning] = useState(false);
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("none");
   const [progress, setProgress] = useState<GenerationProgress>({
     status: "idle",
     message: "",
@@ -83,10 +91,10 @@ export default function GeneratePanel({
     }
   }, [isOpen]);
 
-  // Reset reasoning toggle when no selected model supports it
+  // Reset reasoning effort when no selected model supports it
   useEffect(() => {
     if (!anySelectedSupportsReasoning) {
-      setReasoning(false);
+      setReasoningEffort("none");
     }
   }, [anySelectedSupportsReasoning]);
 
@@ -182,8 +190,8 @@ export default function GeneratePanel({
         mode,
       };
 
-      if (reasoning && anySelectedSupportsReasoning) {
-        body.reasoning = true;
+      if (reasoningEffort !== "none" && anySelectedSupportsReasoning) {
+        body.reasoningEffort = reasoningEffort;
       }
 
       if (selectedPromptId === "custom") {
@@ -594,38 +602,33 @@ export default function GeneratePanel({
             </div>
           </div>
 
-          {/* Reasoning Toggle — only visible when relevant */}
+          {/* Reasoning Effort — only visible when relevant */}
           {anySelectedSupportsReasoning && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-300">
-                Reasoning
+                Reasoning Effort
               </label>
-              <button
-                onClick={() => setReasoning(!reasoning)}
-                className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm text-left transition-all border ${
-                  reasoning
-                    ? "bg-amber-500/10 border-amber-500/40 text-amber-300"
-                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
-                }`}
-              >
-                <div
-                  className={`w-9 h-5 rounded-full transition-colors relative ${
-                    reasoning ? "bg-amber-500" : "bg-gray-600"
-                  }`}
-                >
-                  <div
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      reasoning ? "translate-x-4" : "translate-x-0.5"
+              <div className="flex gap-1.5">
+                {REASONING_EFFORTS.map((level) => (
+                  <button
+                    key={level.value}
+                    onClick={() => setReasoningEffort(level.value)}
+                    className={`flex-1 px-2 py-2.5 rounded-lg text-center transition-all border ${
+                      reasoningEffort === level.value
+                        ? level.value === "none"
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-amber-500/15 border-amber-500/50 text-amber-300"
+                        : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
                     }`}
-                  />
-                </div>
-                <div>
-                  <div className="font-medium">Enable reasoning</div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    Uses high reasoning effort for supported models (GPT-5.2 series). May increase cost and latency.
-                  </div>
-                </div>
-              </button>
+                  >
+                    <div className="text-xs font-medium">{level.label}</div>
+                    <div className="text-[10px] text-gray-500 mt-0.5">{level.description}</div>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Applied to supported models (Anthropic, OpenAI, Gemini). Higher effort = better quality, more cost.
+              </p>
             </div>
           )}
 
@@ -637,8 +640,8 @@ export default function GeneratePanel({
             </span>{" "}
             designs ({selectedModels.size} model
             {selectedModels.size !== 1 ? "s" : ""} × 5 variants)
-            {reasoning && (
-              <span className="text-amber-400"> · reasoning enabled</span>
+            {reasoningEffort !== "none" && (
+              <span className="text-amber-400"> · reasoning: {reasoningEffort}</span>
             )}
           </div>
         </div>

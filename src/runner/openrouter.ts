@@ -27,9 +27,9 @@ export async function callOpenRouter(
         temperature: options.temperature ?? 0.9,
       };
 
-      // Add reasoning parameter if enabled and model supports it
-      if (options.reasoning && options.model.supportsReasoning) {
-        body.reasoning = { effort: "high" };
+      // Add reasoning parameter if model supports it and effort is set
+      if (options.reasoningEffort && options.reasoningEffort !== "none" && options.model.supportsReasoning) {
+        body.reasoning = { effort: options.reasoningEffort };
       }
 
       const response = await fetch(OPENROUTER_URL, {

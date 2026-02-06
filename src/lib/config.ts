@@ -6,11 +6,13 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     id: "claude-opus-4-6",
     openRouterId: "anthropic/claude-opus-4-6",
     name: "Claude Opus 4.6",
+    supportsReasoning: true,
   },
   {
     id: "claude-sonnet-4-5",
     openRouterId: "anthropic/claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
+    supportsReasoning: true,
   },
   // OpenAI
   {
@@ -36,11 +38,18 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     id: "gemini-2-5-pro",
     openRouterId: "google/gemini-2.5-pro-preview-06-05",
     name: "Gemini 2.5 Pro",
+    supportsReasoning: true,
   },
   {
     id: "gemini-2-5-flash",
     openRouterId: "google/gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
+  },
+  {
+    id: "gemini-3-pro",
+    openRouterId: "google/gemini-3-pro-preview",
+    name: "Gemini 3 Pro",
+    supportsReasoning: true,
   },
   {
     id: "gemini-3-flash",
@@ -84,7 +93,7 @@ export function getModelGroups(): { label: string; models: ModelConfig[] }[] {
   const groups: { label: string; ids: string[] }[] = [
     { label: "Anthropic", ids: ["claude-opus-4-6", "claude-sonnet-4-5"] },
     { label: "OpenAI", ids: ["gpt-5-2", "gpt-5-2-pro", "gpt-5-2-codex"] },
-    { label: "Google", ids: ["gemini-2-5-pro", "gemini-2-5-flash", "gemini-3-flash"] },
+    { label: "Google", ids: ["gemini-3-pro", "gemini-2-5-pro", "gemini-2-5-flash", "gemini-3-flash"] },
     { label: "Others", ids: ["deepseek-v3-2", "qwen3-coder", "kimi-k2-5", "glm-4-7", "minimax-m2-1"] },
   ];
 

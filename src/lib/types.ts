@@ -1,3 +1,5 @@
+export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
 export interface ModelConfig {
   id: string;
   openRouterId: string;
@@ -12,7 +14,7 @@ export interface GenerateOptions {
   temperature?: number;
   apiKey: string;
   signal?: AbortSignal;
-  reasoning?: boolean;
+  reasoningEffort?: ReasoningEffort;
 }
 
 export interface GenerationResult {

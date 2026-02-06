@@ -22,13 +22,13 @@ export async function POST(request: NextRequest) {
     promptId,
     models: modelIds,
     mode,
-    reasoning,
+    reasoningEffort,
   } = body as {
     prompt?: string;
     promptId?: string;
     models: string[];
     mode: "raw" | "skill";
-    reasoning?: boolean;
+    reasoningEffort?: string;
   };
 
   // Validate required fields
@@ -108,13 +108,18 @@ export async function POST(request: NextRequest) {
       };
 
       try {
+        const validEfforts = ["none", "minimal", "low", "medium", "high", "xhigh"];
+        const effort = reasoningEffort && validEfforts.includes(reasoningEffort)
+          ? (reasoningEffort as "none" | "minimal" | "low" | "medium" | "high" | "xhigh")
+          : undefined;
+
         const { run } = await runBenchmark({
           prompt: promptText,
           promptTitle,
           models,
           mode,
           apiKey,
-          reasoning,
+          reasoningEffort: effort,
           signal: abortController.signal,
           onProgress: (update) => {
             send("progress", update);
