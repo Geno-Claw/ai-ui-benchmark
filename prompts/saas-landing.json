@@ -1,0 +1,7 @@
+{
+  "id": "saas-landing",
+  "title": "SaaS Landing Page",
+  "category": "Landing Pages",
+  "description": "A modern SaaS product landing page with hero, features, pricing, and CTA sections",
+  "prompt": "Create a complete, modern SaaS landing page with the following sections: 1) A hero section with a bold headline, subheadline, and a prominent call-to-action button. 2) A features section showcasing 3-4 key product features with icons and descriptions. 3) A pricing section with 3 tiers (Free, Pro, Enterprise) displayed as cards. 4) A testimonials section with 2-3 customer quotes. 5) A footer with navigation links and social media icons. Use a clean, professional design with a cohesive color palette. Include smooth scroll behavior, hover effects on interactive elements, and ensure the page is fully responsive. The design should feel premium and trustworthy. Use only HTML, CSS (inline or in a style tag), and vanilla JavaScript. Do not use any external frameworks or libraries except Google Fonts."
+}
