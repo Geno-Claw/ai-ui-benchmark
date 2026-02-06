@@ -70,8 +70,9 @@ A personal developer tool to evaluate and compare how different AI models genera
 
 | Requirement | Detail |
 |---|---|
-| **Trigger** | UI sends POST to `/api/generate` with prompt, models, mode, and API keys in headers |
-| **Models** | Claude Opus 4.6, Claude Sonnet 4.5, GPT-5.2, Gemini 2.5 Pro (extensible) |
+| **Trigger** | UI sends POST to `/api/generate` with prompt, models, mode; OpenRouter key in header |
+| **API** | OpenRouter (OpenAI-compatible) — one key for all models |
+| **Models** | Claude Opus 4.6, Claude Sonnet 4.5, GPT-5.2, Gemini 2.5 Pro (any OpenRouter model) |
 | **Variants** | 5 unique designs per model per prompt |
 | **Variance method** | Vary temperature and/or include explicit "make this unique" instruction per variant |
 | **Raw mode** | Send the prompt directly to each model |
@@ -135,12 +136,9 @@ ai-ui-benchmark/
 │   │   ├── page.tsx            # Main gallery/comparison view
 │   │   ├── archive/            # Archive browser page
 │   │   └── api/                # API routes for serving archived designs
-│   ├── runner/                 # CLI prompt runner
-│   │   ├── index.ts            # Entry point
-│   │   ├── models/             # Model adapters (anthropic, openai, google)
-│   │   │   ├── anthropic.ts
-│   │   │   ├── openai.ts
-│   │   │   └── google.ts
+│   ├── runner/                 # Generation engine (server-side)
+│   │   ├── generate.ts         # Core generation logic
+│   │   ├── openrouter.ts       # OpenRouter API client
 │   │   ├── prompt-loader.ts    # Load from bank or inline
 │   │   └── archiver.ts         # Save outputs + update index
 │   ├── lib/                    # Shared utilities
@@ -179,21 +177,23 @@ ai-ui-benchmark/
 └── .env.example
 ```
 
-### Model Adapter Pattern
+### OpenRouter Integration
 
-Each model gets an adapter that implements a common interface:
+All models accessed through a single OpenRouter client. Adding a new model is just adding its OpenRouter model ID to the config — no new adapter code needed.
 
 ```typescript
-interface ModelAdapter {
-  id: string;
-  name: string;
-  generate(prompt: string, options: GenerateOptions): Promise<GenerationResult>;
+interface ModelConfig {
+  id: string;             // Display ID (e.g. "claude-opus-4-6")
+  openRouterId: string;   // OpenRouter model ID (e.g. "anthropic/claude-opus-4-6")
+  name: string;           // Display name
 }
 
 interface GenerateOptions {
+  model: ModelConfig;
   variant: number;        // 1-5
   mode: 'raw' | 'skill';
   temperature?: number;
+  apiKey: string;         // From localStorage via request header
 }
 
 interface GenerationResult {
@@ -204,11 +204,17 @@ interface GenerationResult {
   };
   durationMs: number;
   model: string;
+  cost?: number;          // OpenRouter returns cost
   error?: string;
 }
 ```
 
-This makes it trivial to add new models — just implement the adapter.
+OpenRouter benefits:
+- **One key, all models** — no juggling multiple provider accounts
+- **Unified API** — OpenAI-compatible, same interface for every model
+- **Cost tracking** — OpenRouter returns cost per request
+- **Easy to add models** — just add the OpenRouter model ID, no new code
+- **Rate limiting** — handled by OpenRouter
 
 ### Iframe Sandboxing
 
@@ -274,23 +280,19 @@ POST /api/test-key                          → Validate an API key works
 ```
 Browser (localStorage)
   │
-  ├─ User enters key in Settings page
+  ├─ User enters OpenRouter key in Settings page
   ├─ Key stored in localStorage (never leaves browser except via API call)
   │
   └─ On generate request:
        POST /api/generate
-       Headers: {
-         x-anthropic-key: <from localStorage>,
-         x-openai-key: <from localStorage>,
-         x-google-key: <from localStorage>
-       }
+       Headers: { x-openrouter-key: <from localStorage> }
        Body: { prompt, models, mode }
        │
-       └─ Server-side: extracts keys from headers,
-          makes API calls to model providers,
+       └─ Server-side: extracts key from header,
+          makes API calls to OpenRouter,
           saves outputs to archive/,
           returns results.
-          Keys are NEVER persisted server-side.
+          Key is NEVER persisted server-side.
 ```
 
 ---
@@ -303,7 +305,7 @@ Browser (localStorage)
 | **Styling** | Tailwind CSS | Rapid UI building, consistent design |
 | **Language** | TypeScript | Type safety across runner + UI |
 | **Code Highlighting** | Prism.js or Shiki | Syntax highlighting for source view |
-| **AI SDKs** | @anthropic-ai/sdk, openai, @google/generative-ai | Official SDKs for each provider |
+| **AI API** | OpenRouter (OpenAI-compatible SDK) | One key, all models, unified API |
 | **Storage** | File system (JSON + HTML) | Simple, portable, no database needed |
 | **Package Manager** | npm | Standard |
 
@@ -315,41 +317,40 @@ Browser (localStorage)
 
 API keys are **never** stored in code, config files, or committed to the repo.
 
-**Browser localStorage only:**
-- Settings page in the UI where users enter their API keys
-- Keys stored in **browser localStorage** — never sent to the server or saved to disk outside the browser
-- Keys passed to API routes via request headers (over localhost only)
-- Clear/reset button to wipe stored keys
-- Visual indicator showing which models are configured vs missing keys
+**Single API key via browser localStorage:**
+- All model access through **OpenRouter** — one API key, all models
+- Settings page in the UI where the user enters their OpenRouter API key
+- Key stored in **browser localStorage** — never sent to the server or saved to disk outside the browser
+- Key passed to API routes via request header (over localhost only)
+- Clear/reset button to wipe stored key
+- Model availability based on OpenRouter account (free/paid tiers)
 - All generation triggered from the UI (no separate CLI)
 
 ### Security Rules
 
 | Rule | Detail |
 |---|---|
-| **No keys in code** | All API keys via localStorage or env vars only |
-| **`.env` gitignored** | `.gitignore` includes `.env`, `.env.local`, `.env.*.local` |
-| **`.env.example` committed** | Template with placeholder values, no real keys |
+| **No keys in code** | API key via localStorage only |
 | **No keys in metadata** | `meta.json` files never contain API keys |
-| **No keys in logs** | CLI output redacts any key-like strings |
+| **No keys in logs** | Output redacts any key-like strings |
 | **Localhost only** | API routes only accessible on localhost (Next.js dev server) |
 | **Iframe sandboxing** | Generated HTML rendered in sandboxed iframes — cannot access parent page or localStorage |
-| **No external transmission** | Keys never leave the local machine — all API calls made server-side |
+| **No server persistence** | Key never written to disk server-side — only lives in browser localStorage |
 
 ### Settings UI
 
 ```
 Settings Page
-├── API Keys
-│   ├── Anthropic API Key    [••••••••••] [Show] [Clear]
-│   ├── OpenAI API Key       [••••••••••] [Show] [Clear]
-│   └── Google AI API Key    [••••••••••] [Show] [Clear]
+├── OpenRouter API Key   [••••••••••] [Show] [Clear]
 ├── Status
-│   ├── ✅ Claude Opus 4.6      Ready
-│   ├── ✅ Claude Sonnet 4.5    Ready
-│   ├── ❌ GPT-5.2              No API key
-│   └── ❌ Gemini 2.5 Pro       No API key
-└── [Test Connection] [Clear All Keys]
+│   └── ✅ Connected (or ❌ No key / Invalid)
+├── Available Models
+│   ├── Claude Opus 4.6
+│   ├── Claude Sonnet 4.5
+│   ├── GPT-5.2
+│   ├── Gemini 2.5 Pro
+│   └── (any model available on OpenRouter)
+└── [Test Connection] [Clear Key]
 ```
 
 ---
