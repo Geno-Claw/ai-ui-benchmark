@@ -1,9 +1,19 @@
+/**
+ * @deprecated Server-side archive storage is deprecated.
+ * Run data is now stored client-side in IndexedDB (see src/lib/db.ts).
+ * This module is retained for backward compatibility and as a fallback.
+ */
 import { promises as fs } from "fs";
 import path from "path";
 import { Run, RunSummary, GenerationResult } from "@/lib/types";
 
 const ARCHIVE_DIR = path.join(process.cwd(), "archive");
 const INDEX_PATH = path.join(ARCHIVE_DIR, "index.json");
+
+/** Validate that a run/resource ID is safe (alphanumeric + hyphens only). */
+function sanitizeId(id: string): boolean {
+  return /^[a-z0-9-]+$/i.test(id);
+}
 
 /**
  * Save a benchmark run to the archive.
@@ -105,7 +115,9 @@ export async function loadIndex(): Promise<RunSummary[]> {
  * Load a full run from the archive, including HTML variant content.
  */
 export async function loadRun(runId: string): Promise<Run | null> {
+  if (!sanitizeId(runId)) return null;
   const runDir = path.join(ARCHIVE_DIR, runId);
+  if (!path.resolve(runDir).startsWith(path.resolve(ARCHIVE_DIR))) return null;
   const metaPath = path.join(runDir, "meta.json");
 
   try {
@@ -161,7 +173,11 @@ export async function loadRun(runId: string): Promise<Run | null> {
  * Delete an archived run.
  */
 export async function deleteRun(runId: string): Promise<void> {
+  if (!sanitizeId(runId)) throw new Error("Invalid run ID");
   const runDir = path.join(ARCHIVE_DIR, runId);
+  if (!path.resolve(runDir).startsWith(path.resolve(ARCHIVE_DIR))) {
+    throw new Error("Invalid run ID");
+  }
   await fs.rm(runDir, { recursive: true, force: true });
 
   // Update index

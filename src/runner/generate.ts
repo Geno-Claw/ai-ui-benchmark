@@ -3,7 +3,6 @@ import path from "path";
 import { GenerateOptions, GenerationResult, ModelConfig, ReasoningEffort, Run } from "@/lib/types";
 import { VARIANT_TEMPERATURES } from "@/lib/config";
 import { callOpenRouter } from "./openrouter";
-import { loadIndex } from "./archiver";
 
 export interface BenchmarkOptions {
   prompt: string;
@@ -45,29 +44,15 @@ function slugify(text: string): string {
 }
 
 /**
- * Generate a unique run ID, incrementing if a duplicate exists.
+ * Generate a unique run ID using a timestamp suffix.
+ * Runs are now stored client-side in IndexedDB, so we cannot check the
+ * server-side archive for duplicates. A timestamp suffix ensures uniqueness.
  */
-async function generateRunId(
-  promptTitle: string,
-  mode: string
-): Promise<string> {
+function generateRunId(promptTitle: string, mode: string): string {
   const date = new Date().toISOString().slice(0, 10);
   const slug = slugify(promptTitle);
-  const base = `${date}-${slug}-${mode}`;
-
-  const index = await loadIndex();
-  const existingIds = new Set(index.map((r) => r.id));
-
-  if (!existingIds.has(base)) {
-    return base;
-  }
-
-  // Increment suffix
-  let n = 2;
-  while (existingIds.has(`${base}-${n}`)) {
-    n++;
-  }
-  return `${base}-${n}`;
+  const ts = Date.now().toString(36); // compact timestamp suffix
+  return `${date}-${slug}-${mode}-${ts}`;
 }
 
 /**
@@ -126,7 +111,7 @@ export async function runBenchmark(
     reasoningEffort,
   } = options;
 
-  const runId = await generateRunId(promptTitle, mode);
+  const runId = generateRunId(promptTitle, mode);
   const total = models.length * variantsPerModel;
   let completed = 0;
 

@@ -138,6 +138,19 @@
 - [x] **formatCost utility** — smart USD formatting ($X.XXXX for < $0.01, $X.XX otherwise, "—" for missing)
 - [x] **OpenRouter cost extraction** — reads `usage.cost` from OpenRouter response (corrected from `usage.total_cost`)
 
+### Client-Side Storage & Security (v0.7.0)
+- [x] **IndexedDB storage** — benchmark runs now stored entirely client-side using IndexedDB via the `idb` library
+  - No server filesystem writes for run data
+  - `src/lib/db.ts` wrapper: `saveRun`, `loadRuns`, `loadRun`, `deleteRun`
+  - Runs indexed by `date` and `mode` for efficient queries
+  - Full run data (including HTML designs) persisted in the browser
+- [x] **SSE `complete` event** now streams the full `Run` object (with HTML designs) so the client can save directly to IndexedDB
+- [x] **Removed server-side saveRun** from generation flow — archiver module retained but deprecated
+- [x] **Path traversal protection** (#15) — input validation on all ID-based file operations
+  - `prompt-loader.ts`: regex + `path.resolve` prefix check on prompt IDs
+  - `archiver.ts`: `sanitizeId()` + resolved path prefix check on `loadRun` and `deleteRun`
+- [x] **Deprecated server routes** — `/api/runs` and `/api/runs/[runId]` retained for backward compatibility but no longer called by the UI
+
 ### Future Enhancements
 - [ ] Side-by-side layout mode (2-4 fixed slots)
 - [x] Client-side search/filter over archived runs

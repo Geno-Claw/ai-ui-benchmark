@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { PromptConfig, ReasoningEffort } from "@/lib/types";
+import { PromptConfig, ReasoningEffort, Run } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+import { saveRun } from "@/lib/db";
 
 const EFFORT_LABELS: Record<ReasoningEffort, { label: string; description: string }> = {
   none: { label: "Off", description: "No reasoning" },
@@ -312,6 +313,10 @@ export default function GeneratePanel({
               };
             });
           } else if (event === "complete") {
+            // Save full run data to IndexedDB
+            const run = data as Run;
+            await saveRun(run);
+
             setProgress((prev) => ({
               ...prev,
               status: "complete",
@@ -322,7 +327,7 @@ export default function GeneratePanel({
 
             // Notify parent after brief delay
             setTimeout(() => {
-              onComplete(data.id);
+              onComplete(run.id);
               setProgress({
                 status: "idle",
                 message: "",

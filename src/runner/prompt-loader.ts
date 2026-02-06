@@ -6,12 +6,16 @@ const PROMPTS_DIR = path.join(process.cwd(), "prompts");
 
 /**
  * Load a prompt from the prompt bank by ID.
- * Returns null if the prompt doesn't exist.
+ * Returns null if the prompt doesn't exist or the ID is invalid.
  */
 export async function loadPrompt(id: string): Promise<PromptConfig | null> {
+  // Validate ID to prevent path traversal
+  if (!/^[a-z0-9-]+$/i.test(id)) return null;
+  const resolved = path.resolve(PROMPTS_DIR, `${id}.json`);
+  if (!resolved.startsWith(path.resolve(PROMPTS_DIR))) return null;
+
   try {
-    const filePath = path.join(PROMPTS_DIR, `${id}.json`);
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(resolved, "utf-8");
     return JSON.parse(content) as PromptConfig;
   } catch {
     return null;

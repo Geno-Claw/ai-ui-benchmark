@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { RunSummary, Run, GenerationResult } from "@/lib/types";
 import { DEFAULT_MODELS } from "@/lib/config";
+import { loadRuns as dbLoadRuns, loadRun as dbLoadRun, deleteRun as dbDeleteRun } from "@/lib/db";
 import RunSelector from "@/components/RunSelector";
 import Gallery from "@/components/Gallery";
 import ComparisonSlot from "@/components/ComparisonSlot";
@@ -30,10 +31,9 @@ export default function Home() {
 
   const modelNames = buildModelNames();
 
-  const loadRuns = async () => {
+  const fetchRuns = useCallback(async () => {
     try {
-      const res = await fetch("/api/runs");
-      const data: RunSummary[] = await res.json();
+      const data = await dbLoadRuns();
       setRuns(data);
       // Auto-select the first run if none selected
       if (data.length > 0 && !currentRunId) {
@@ -44,11 +44,11 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load runs on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadRuns(); }, []);
+  useEffect(() => { fetchRuns(); }, [fetchRuns]);
 
   // Load full run data when currentRunId changes
   useEffect(() => {
@@ -57,19 +57,15 @@ export default function Home() {
       return;
     }
     setRunLoading(true);
-    fetch(`/api/runs/${currentRunId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Not found");
-        return res.json();
-      })
-      .then((data: Run) => setCurrentRun(data))
+    dbLoadRun(currentRunId)
+      .then((data) => setCurrentRun(data))
       .catch(() => setCurrentRun(null))
       .finally(() => setRunLoading(false));
   }, [currentRunId]);
 
   const handleDeleteRun = async (runId: string) => {
     try {
-      await fetch(`/api/runs/${runId}`, { method: "DELETE" });
+      await dbDeleteRun(runId);
       setRuns((prev) => prev.filter((r) => r.id !== runId));
       if (currentRunId === runId) {
         const remaining = runs.filter((r) => r.id !== runId);
@@ -83,10 +79,9 @@ export default function Home() {
   const handleGenerateComplete = useCallback(
     (runId: string) => {
       setGenerateOpen(false);
-      loadRuns().then(() => setCurrentRunId(runId));
+      fetchRuns().then(() => setCurrentRunId(runId));
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [fetchRuns]
   );
 
   const handleFullscreen = (modelId: string, variant: number) => {

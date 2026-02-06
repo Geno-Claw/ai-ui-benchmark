@@ -1,3 +1,8 @@
+/**
+ * @deprecated Runs are now stored client-side in IndexedDB.
+ * These routes are retained for backward compatibility but are no longer
+ * called by the main application flow.
+ */
 import { NextRequest, NextResponse } from "next/server";
 import { loadRun, deleteRun } from "@/runner/archiver";
 

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_MODELS } from "@/lib/config";
 import { runBenchmark } from "@/runner/generate";
-import { saveRun } from "@/runner/archiver";
 import { loadPrompt, inlinePrompt } from "@/runner/prompt-loader";
 
 /** POST /api/generate — Trigger a benchmark run, streamed via SSE */
@@ -126,15 +125,9 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Save to archive
-        console.log(`[generate] Benchmark complete, saving run ${run.id}...`);
-        await saveRun(run);
-
-        // Send summary (without full HTML content)
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { designs: _designs, ...summary } = run;
-        send("complete", summary);
-        console.log(`[generate] Run saved: ${run.id}`);
+        // Send full run data so the client can save to IndexedDB
+        console.log(`[generate] Benchmark complete: ${run.id}`);
+        send("complete", run);
       } catch (err) {
         if (abortController.signal.aborted) {
           send("error", { error: "Generation cancelled" });
