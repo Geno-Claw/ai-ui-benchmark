@@ -109,7 +109,6 @@ export default function GeneratePanel({
     return hasApiKey && hasPrompt && hasModels && progress.status !== "generating";
   }, [selectedPromptId, customPrompt, selectedModels, progress.status]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- uses refs + progress state intentionally
   const getEstimatedTimeRemaining = useCallback(() => {
     if (completedTimesRef.current.length < 2 || progress.current === 0) return null;
     const elapsed = Date.now() - startTimeRef.current;
@@ -118,7 +117,7 @@ export default function GeneratePanel({
     if (remaining < 1000) return "< 1s";
     if (remaining < 60000) return `~${Math.ceil(remaining / 1000)}s`;
     return `~${Math.ceil(remaining / 60000)}m`;
-  }, [progress.current, progress.total]);
+  }, [progress]);
 
   const handleGenerate = async () => {
     const apiKey = localStorage.getItem("openrouter-api-key");
