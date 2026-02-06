@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
     promptId,
     models: modelIds,
     mode,
-    reasoningEffort,
+    modelEfforts,
   } = body as {
     prompt?: string;
     promptId?: string;
     models: string[];
     mode: "raw" | "skill";
-    reasoningEffort?: string;
+    modelEfforts?: Record<string, string>;
   };
 
   // Validate required fields
@@ -107,9 +107,14 @@ export async function POST(request: NextRequest) {
       };
 
       try {
-        const validEfforts = ["none", "minimal", "low", "medium", "high", "xhigh"];
-        const effort = reasoningEffort && validEfforts.includes(reasoningEffort)
-          ? (reasoningEffort as "none" | "minimal" | "low" | "medium" | "high" | "xhigh")
+        // Validate and pass per-model effort map
+        const validEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+        const validatedEfforts: Record<string, string> | undefined = modelEfforts
+          ? Object.fromEntries(
+              Object.entries(modelEfforts).filter(
+                ([, v]) => validEfforts.includes(v)
+              )
+            )
           : undefined;
 
         const { run } = await runBenchmark({
@@ -118,7 +123,7 @@ export async function POST(request: NextRequest) {
           models,
           mode,
           apiKey,
-          reasoningEffort: effort,
+          modelEfforts: validatedEfforts,
           signal: abortController.signal,
           onProgress: (update) => {
             send("progress", update);

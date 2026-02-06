@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PromptConfig, ReasoningEffort, Run } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
 import { saveRun } from "@/lib/db";
 
-const EFFORT_LABELS: Record<ReasoningEffort, { label: string; description: string }> = {
-  none: { label: "Off", description: "No reasoning" },
-  minimal: { label: "Minimal", description: "Bare minimum" },
-  low: { label: "Low", description: "Quick, cheap" },
-  medium: { label: "Medium", description: "Balanced" },
-  high: { label: "High", description: "Thorough" },
-  xhigh: { label: "XHigh", description: "OpenAI max" },
-  max: { label: "Max", description: "Anthropic max" },
+const EFFORT_LABELS: Record<ReasoningEffort, { label: string; short: string }> = {
+  none: { label: "Off", short: "off" },
+  minimal: { label: "Min", short: "min" },
+  low: { label: "Low", short: "low" },
+  medium: { label: "Med", short: "med" },
+  high: { label: "High", short: "high" },
+  xhigh: { label: "XHigh", short: "xhi" },
+  max: { label: "Max", short: "max" },
 };
 import { formatCost } from "@/lib/utils";
 
@@ -64,7 +64,7 @@ export default function GeneratePanel({
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
-  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>("none");
+  const [modelEfforts, setModelEfforts] = useState<Record<string, ReasoningEffort>>({});
   const [progress, setProgress] = useState<GenerationProgress>({
     status: "idle",
     message: "",
@@ -79,26 +79,21 @@ export default function GeneratePanel({
 
   const modelGroups = getModelGroups();
 
-  // Check if any selected model supports reasoning and compute available efforts
-  const selectedReasoningModels = DEFAULT_MODELS.filter(
-    (m) => selectedModels.has(m.id) && m.reasoningEfforts && m.reasoningEfforts.length > 0
-  );
-  const anySelectedSupportsReasoning = selectedReasoningModels.length > 0;
-
-  // Compute the union of all effort levels across selected models
-  const availableEfforts: ReasoningEffort[] = useMemo(
-    () =>
-      anySelectedSupportsReasoning
-        ? Array.from(
-            new Set(selectedReasoningModels.flatMap((m) => m.reasoningEfforts ?? []))
-          ).sort((a, b) => {
-            const order: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
-            return order.indexOf(a) - order.indexOf(b);
-          })
-        : ["none"],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [anySelectedSupportsReasoning, selectedModels]
-  );
+  // Clean up modelEfforts when models are deselected
+  useEffect(() => {
+    setModelEfforts((prev) => {
+      const next: Record<string, ReasoningEffort> = {};
+      let changed = false;
+      for (const [id, effort] of Object.entries(prev)) {
+        if (selectedModels.has(id)) {
+          next[id] = effort;
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [selectedModels]);
 
   // Load prompts from API
   useEffect(() => {
@@ -109,16 +104,6 @@ export default function GeneratePanel({
         .catch(() => setPrompts([]));
     }
   }, [isOpen]);
-
-  // Reset reasoning effort when selection changes
-  useEffect(() => {
-    if (!anySelectedSupportsReasoning) {
-      setReasoningEffort("none");
-    } else if (!availableEfforts.includes(reasoningEffort)) {
-      // Current effort not supported by any selected model — clamp to nearest valid
-      setReasoningEffort("none");
-    }
-  }, [anySelectedSupportsReasoning, availableEfforts, reasoningEffort]);
 
   // Extract categories dynamically from loaded prompts
   const categories = Array.from(new Set(prompts.map((p) => p.category)));
@@ -151,6 +136,49 @@ export default function GeneratePanel({
     // Keep at least the first model selected
     setSelectedModels(new Set([DEFAULT_MODELS[0].id]));
   };
+
+  /** Set effort for a single model */
+  const setModelEffort = (modelId: string, effort: ReasoningEffort) => {
+    setModelEfforts((prev) => {
+      if (effort === "none") {
+        // Remove from map when set to "none" (default)
+        if (!(modelId in prev)) return prev;
+        const next = { ...prev };
+        delete next[modelId];
+        return next;
+      }
+      if (prev[modelId] === effort) return prev;
+      return { ...prev, [modelId]: effort };
+    });
+  };
+
+  /** Bulk-set all reasoning-capable selected models to a given effort */
+  const setAllEfforts = (effort: ReasoningEffort) => {
+    const next: Record<string, ReasoningEffort> = {};
+    for (const model of DEFAULT_MODELS) {
+      if (
+        selectedModels.has(model.id) &&
+        model.reasoningEfforts &&
+        model.reasoningEfforts.length > 0
+      ) {
+        if (effort !== "none" && model.reasoningEfforts.includes(effort)) {
+          next[model.id] = effort;
+        }
+        // if effort is "none" or not supported, omit from map (= "none")
+      }
+    }
+    setModelEfforts(next);
+  };
+
+  // Check if any selected model supports reasoning
+  const anySelectedSupportsReasoning = DEFAULT_MODELS.some(
+    (m) => selectedModels.has(m.id) && m.reasoningEfforts && m.reasoningEfforts.length > 0
+  );
+
+  // Compute active efforts summary for display
+  const activeEfforts = Object.entries(modelEfforts).filter(
+    ([, effort]) => effort !== "none"
+  );
 
   const canGenerate = useCallback(() => {
     const hasApiKey = !!localStorage.getItem("openrouter-api-key");
@@ -212,8 +240,9 @@ export default function GeneratePanel({
         mode,
       };
 
-      if (reasoningEffort !== "none" && anySelectedSupportsReasoning) {
-        body.reasoningEffort = reasoningEffort;
+      // Send per-model efforts (only non-none entries)
+      if (activeEfforts.length > 0) {
+        body.modelEfforts = modelEfforts;
       }
 
       if (selectedPromptId === "custom") {
@@ -380,6 +409,21 @@ export default function GeneratePanel({
       : 0;
   const eta = getEstimatedTimeRemaining();
 
+  /** Build short reasoning summary for the status bar */
+  const reasoningSummary = (() => {
+    if (activeEfforts.length === 0) return null;
+    return activeEfforts
+      .map(([modelId, effort]) => {
+        const model = DEFAULT_MODELS.find((m) => m.id === modelId);
+        // Short name: take last meaningful segment
+        const shortName = model
+          ? model.name.replace(/^(Claude |GPT-|Gemini |DeepSeek |Qwen3 |Kimi |GLM |MiniMax )/, "")
+          : modelId;
+        return `${shortName}→${EFFORT_LABELS[effort].short}`;
+      })
+      .join(", ");
+  })();
+
   return (
     <>
       {/* Backdrop */}
@@ -545,52 +589,105 @@ export default function GeneratePanel({
                   <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-1.5 px-1">
                     {group.label}
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {group.models.map((model) => (
-                      <button
-                        key={model.id}
-                        onClick={() => toggleModel(model.id)}
-                        className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left transition-all border ${
-                          selectedModels.has(model.id)
-                            ? "bg-blue-600/10 border-blue-500/50 text-blue-300"
-                            : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
-                        }`}
-                      >
-                        <div
-                          className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
-                            selectedModels.has(model.id)
-                              ? "bg-blue-600 border-blue-500"
-                              : "border-gray-600"
-                          }`}
-                        >
-                          {selectedModels.has(model.id) && (
-                            <svg
-                              className="w-2.5 h-2.5 text-white"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                  <div className="space-y-1.5">
+                    {group.models.map((model) => {
+                      const isSelected = selectedModels.has(model.id);
+                      const hasReasoning = model.reasoningEfforts && model.reasoningEfforts.length > 0;
+                      const currentEffort = modelEfforts[model.id] ?? "none";
+                      const showEffortPicker = isSelected && hasReasoning;
+
+                      return (
+                        <div key={model.id} className="space-y-0">
+                          {/* Model card row */}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => toggleModel(model.id)}
+                              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left transition-all border flex-1 min-w-0 ${
+                                isSelected
+                                  ? "bg-blue-600/10 border-blue-500/50 text-blue-300"
+                                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                              }`}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          )}
+                              <div
+                                className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
+                                  isSelected
+                                    ? "bg-blue-600 border-blue-500"
+                                    : "border-gray-600"
+                                }`}
+                              >
+                                {isSelected && (
+                                  <svg
+                                    className="w-2.5 h-2.5 text-white"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={3}
+                                      d="M5 13l4 4L19 7"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className="truncate">{model.name}</span>
+                              {hasReasoning && (
+                                <span className="ml-auto text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0" title="Supports reasoning">
+                                  🧠
+                                </span>
+                              )}
+                            </button>
+
+                            {/* Inline effort picker pills */}
+                            {showEffortPicker && (
+                              <div className="flex gap-0.5 shrink-0">
+                                {(["none", ...model.reasoningEfforts!.filter((e) => e !== "none")] as ReasoningEffort[]).map(
+                                  (effort) => (
+                                    <button
+                                      key={effort}
+                                      onClick={() => setModelEffort(model.id, effort)}
+                                      title={effort === "none" ? "No reasoning" : `Reasoning: ${effort}`}
+                                      className={`px-1.5 py-1 rounded text-[10px] font-medium transition-all ${
+                                        currentEffort === effort
+                                          ? effort === "none"
+                                            ? "bg-gray-700 text-gray-200"
+                                            : "bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40"
+                                          : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+                                      }`}
+                                    >
+                                      {EFFORT_LABELS[effort].label}
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <span className="truncate">{model.name}</span>
-                        {model.reasoningEfforts && model.reasoningEfforts.length > 0 && (
-                          <span className="ml-auto text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0" title="Supports reasoning">
-                            🧠
-                          </span>
-                        )}
-                      </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* "Set all" shortcut — only when reasoning models are selected */}
+            {anySelectedSupportsReasoning && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[11px] text-gray-500">Set all reasoning:</span>
+                <div className="flex gap-0.5">
+                  {(["none", "low", "medium", "high"] as ReasoningEffort[]).map((effort) => (
+                    <button
+                      key={effort}
+                      onClick={() => setAllEfforts(effort)}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all"
+                    >
+                      {EFFORT_LABELS[effort].label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mode Toggle */}
@@ -628,54 +725,6 @@ export default function GeneratePanel({
             </div>
           </div>
 
-          {/* Reasoning Effort — only visible when relevant */}
-          {anySelectedSupportsReasoning && (
-            <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-300">
-                Reasoning Effort
-              </label>
-              <div className="flex gap-1.5">
-                {availableEfforts.map((effort) => {
-                  const info = EFFORT_LABELS[effort];
-                  return (
-                    <button
-                      key={effort}
-                      onClick={() => setReasoningEffort(effort)}
-                      className={`flex-1 px-2 py-2.5 rounded-lg text-center transition-all border ${
-                        reasoningEffort === effort
-                          ? effort === "none"
-                            ? "bg-gray-700 border-gray-600 text-white"
-                            : "bg-amber-500/15 border-amber-500/50 text-amber-300"
-                          : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
-                      }`}
-                    >
-                      <div className="text-xs font-medium">{info.label}</div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">{info.description}</div>
-                    </button>
-                  );
-                })}
-              </div>
-              {reasoningEffort !== "none" && (
-                <div className="text-xs text-gray-500 space-y-0.5">
-                  {selectedReasoningModels.map((m) => {
-                    const supported = m.reasoningEfforts?.includes(reasoningEffort);
-                    return (
-                      <div key={m.id} className="flex items-center gap-1.5">
-                        <span className={supported ? "text-green-400" : "text-gray-600"}>
-                          {supported ? "✓" : "–"}
-                        </span>
-                        <span className={supported ? "text-gray-400" : "text-gray-600"}>
-                          {m.name}
-                          {!supported && " (not supported, will skip reasoning)"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Summary */}
           <div className="bg-gray-800/50 rounded-lg px-4 py-3 text-sm text-gray-400">
             Will generate{" "}
@@ -684,8 +733,8 @@ export default function GeneratePanel({
             </span>{" "}
             designs ({selectedModels.size} model
             {selectedModels.size !== 1 ? "s" : ""} × 5 variants)
-            {reasoningEffort !== "none" && (
-              <span className="text-amber-400"> · reasoning: {reasoningEffort}</span>
+            {reasoningSummary && (
+              <span className="text-amber-400"> · reasoning: {reasoningSummary}</span>
             )}
           </div>
         </div>

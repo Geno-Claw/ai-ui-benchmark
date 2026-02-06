@@ -13,7 +13,8 @@ export interface BenchmarkOptions {
   variantsPerModel?: number;
   onProgress?: (update: ProgressUpdate) => void;
   signal?: AbortSignal;
-  reasoningEffort?: ReasoningEffort;
+  /** Per-model reasoning effort map (modelId → effort level) */
+  modelEfforts?: Record<string, string>;
 }
 
 export interface ProgressUpdate {
@@ -108,7 +109,7 @@ export async function runBenchmark(
     variantsPerModel = 5,
     onProgress,
     signal,
-    reasoningEffort,
+    modelEfforts,
   } = options;
 
   const runId = generateRunId(promptTitle, mode);
@@ -123,6 +124,14 @@ export async function runBenchmark(
       const variants: GenerationResult[] = [];
       console.log(`[runner] ${model.id}: starting ${variantsPerModel} variants...`);
 
+      // Look up per-model reasoning effort
+      const effortStr = modelEfforts?.[model.id];
+      const validEfforts: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+      const reasoningEffort: ReasoningEffort | undefined =
+        effortStr && validEfforts.includes(effortStr as ReasoningEffort)
+          ? (effortStr as ReasoningEffort)
+          : undefined;
+
       for (let v = 0; v < variantsPerModel; v++) {
         // Check for abort before each variant
         if (signal?.aborted) {
@@ -133,7 +142,7 @@ export async function runBenchmark(
         const variantNum = v + 1;
         const temperature = VARIANT_TEMPERATURES[v] ?? 1.0;
 
-        console.log(`[runner] ${model.id} variant ${variantNum}/${variantsPerModel} (temp=${temperature}) — generating...`);
+        console.log(`[runner] ${model.id} variant ${variantNum}/${variantsPerModel} (temp=${temperature}${reasoningEffort ? `, effort=${reasoningEffort}` : ""}) — generating...`);
 
         // Report generating
         onProgress?.({
