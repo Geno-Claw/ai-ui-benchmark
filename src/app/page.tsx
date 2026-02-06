@@ -59,8 +59,11 @@ export default function Home() {
     progress,
     partialRun,
     activeRunId,
+    resumableJob,
     startGeneration,
     cancelGeneration,
+    resumeGeneration,
+    discardResumableJob,
     getEstimatedTimeRemaining,
   } = useBackgroundGeneration({
     onComplete: handleGenerateComplete,
@@ -228,6 +231,46 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1">
+        {/* Resume banner for interrupted generation */}
+        {resumableJob && (
+          <div className="mx-4 mt-4 rounded-lg border border-amber-500/40 bg-amber-950/50 px-5 py-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex-shrink-0 rounded-full bg-amber-500/20 p-1.5">
+                <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-amber-200">
+                  Generation was interrupted
+                </h3>
+                <p className="mt-1 text-sm text-amber-300/80">
+                  {resumableJob.completedCount} of {resumableJob.totalCount} variants
+                  completed before the page was refreshed.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={resumeGeneration}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500 transition-colors"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Resume
+                </button>
+                <button
+                  onClick={discardResumableJob}
+                  className="inline-flex items-center rounded-md bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-gray-600 transition-colors"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center h-96">
             <div className="flex flex-col items-center gap-3">
