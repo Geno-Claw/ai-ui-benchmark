@@ -39,6 +39,7 @@ export async function saveRun(run: Run): Promise<void> {
     designs: Object.fromEntries(
       Object.entries(run.designs).map(([modelId, variants]) => [
         modelId,
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         variants.map(({ html: _html, ...rest }: GenerationResult) => rest),
       ])
     ),

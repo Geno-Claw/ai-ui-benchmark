@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
     await saveRun(run);
 
     // 7. Return run summary (without full HTML content)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { designs: _designs, ...summary } = run;
     return NextResponse.json(summary);
   } catch (err) {

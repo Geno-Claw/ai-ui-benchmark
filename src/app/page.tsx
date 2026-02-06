@@ -30,11 +30,6 @@ export default function Home() {
 
   const modelNames = buildModelNames();
 
-  // Load runs on mount
-  useEffect(() => {
-    loadRuns();
-  }, []);
-
   const loadRuns = async () => {
     try {
       const res = await fetch("/api/runs");
@@ -50,6 +45,10 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // Load runs on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadRuns(); }, []);
 
   // Load full run data when currentRunId changes
   useEffect(() => {
