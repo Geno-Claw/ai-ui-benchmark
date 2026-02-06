@@ -28,8 +28,10 @@ export async function callOpenRouter(
       };
 
       // Add reasoning parameter if model supports it and effort is set
-      if (options.reasoningEffort && options.reasoningEffort !== "none" && options.model.supportsReasoning) {
-        body.reasoning = { effort: options.reasoningEffort };
+      const effort = options.reasoningEffort;
+      const modelEfforts = options.model.reasoningEfforts;
+      if (effort && effort !== "none" && modelEfforts?.includes(effort)) {
+        body.reasoning = { effort };
       }
 
       const response = await fetch(OPENROUTER_URL, {

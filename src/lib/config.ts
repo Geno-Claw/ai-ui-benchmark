@@ -1,4 +1,11 @@
-import { ModelConfig } from "./types";
+import { ModelConfig, ReasoningEffort } from "./types";
+
+/** Reasoning effort presets per provider */
+const OPENAI_EFFORTS: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh"];
+const ANTHROPIC_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high"];
+const ANTHROPIC_OPUS_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high", "max"];
+const GEMINI_3_EFFORTS: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high"];
+const GEMINI_25_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high"];
 
 export const DEFAULT_MODELS: ModelConfig[] = [
   // Anthropic
@@ -6,50 +13,50 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     id: "claude-opus-4-6",
     openRouterId: "anthropic/claude-opus-4-6",
     name: "Claude Opus 4.6",
-    supportsReasoning: true,
+    reasoningEfforts: ANTHROPIC_OPUS_EFFORTS,
   },
   {
     id: "claude-sonnet-4-5",
     openRouterId: "anthropic/claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
-    supportsReasoning: true,
+    reasoningEfforts: ANTHROPIC_EFFORTS,
   },
   // OpenAI
   {
     id: "gpt-5-2",
     openRouterId: "openai/gpt-5.2",
     name: "GPT-5.2",
-    supportsReasoning: true,
+    reasoningEfforts: OPENAI_EFFORTS,
   },
   {
     id: "gpt-5-2-pro",
     openRouterId: "openai/gpt-5.2-pro",
     name: "GPT-5.2 Pro",
-    supportsReasoning: true,
+    reasoningEfforts: OPENAI_EFFORTS,
   },
   {
     id: "gpt-5-2-codex",
     openRouterId: "openai/gpt-5.2-codex",
     name: "GPT-5.2 Codex",
-    supportsReasoning: true,
+    reasoningEfforts: OPENAI_EFFORTS,
   },
   // Google
+  {
+    id: "gemini-3-pro",
+    openRouterId: "google/gemini-3-pro-preview",
+    name: "Gemini 3 Pro",
+    reasoningEfforts: GEMINI_3_EFFORTS,
+  },
   {
     id: "gemini-2-5-pro",
     openRouterId: "google/gemini-2.5-pro-preview-06-05",
     name: "Gemini 2.5 Pro",
-    supportsReasoning: true,
+    reasoningEfforts: GEMINI_25_EFFORTS,
   },
   {
     id: "gemini-2-5-flash",
     openRouterId: "google/gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
-  },
-  {
-    id: "gemini-3-pro",
-    openRouterId: "google/gemini-3-pro-preview",
-    name: "Gemini 3 Pro",
-    supportsReasoning: true,
   },
   {
     id: "gemini-3-flash",

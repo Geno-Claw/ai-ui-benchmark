@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { PromptConfig, ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
 
-const REASONING_EFFORTS: { value: ReasoningEffort; label: string; description: string }[] = [
-  { value: "none", label: "Off", description: "No reasoning" },
-  { value: "low", label: "Low", description: "Quick, cheap" },
-  { value: "medium", label: "Medium", description: "Balanced" },
-  { value: "high", label: "High", description: "Thorough" },
-  { value: "xhigh", label: "Max", description: "Maximum quality" },
-];
+const EFFORT_LABELS: Record<ReasoningEffort, { label: string; description: string }> = {
+  none: { label: "Off", description: "No reasoning" },
+  minimal: { label: "Minimal", description: "Bare minimum" },
+  low: { label: "Low", description: "Quick, cheap" },
+  medium: { label: "Medium", description: "Balanced" },
+  high: { label: "High", description: "Thorough" },
+  xhigh: { label: "XHigh", description: "OpenAI max" },
+  max: { label: "Max", description: "Anthropic max" },
+};
 import { formatCost } from "@/lib/utils";
 
 interface GeneratePanelProps {
@@ -76,10 +78,21 @@ export default function GeneratePanel({
 
   const modelGroups = getModelGroups();
 
-  // Check if any selected model supports reasoning
-  const anySelectedSupportsReasoning = DEFAULT_MODELS.some(
-    (m) => selectedModels.has(m.id) && m.supportsReasoning
+  // Check if any selected model supports reasoning and compute available efforts
+  const selectedReasoningModels = DEFAULT_MODELS.filter(
+    (m) => selectedModels.has(m.id) && m.reasoningEfforts && m.reasoningEfforts.length > 0
   );
+  const anySelectedSupportsReasoning = selectedReasoningModels.length > 0;
+
+  // Compute the union of all effort levels across selected models
+  const availableEfforts: ReasoningEffort[] = anySelectedSupportsReasoning
+    ? Array.from(
+        new Set(selectedReasoningModels.flatMap((m) => m.reasoningEfforts ?? []))
+      ).sort((a, b) => {
+        const order: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+        return order.indexOf(a) - order.indexOf(b);
+      })
+    : ["none"];
 
   // Load prompts from API
   useEffect(() => {
@@ -91,12 +104,15 @@ export default function GeneratePanel({
     }
   }, [isOpen]);
 
-  // Reset reasoning effort when no selected model supports it
+  // Reset reasoning effort when selection changes
   useEffect(() => {
     if (!anySelectedSupportsReasoning) {
       setReasoningEffort("none");
+    } else if (!availableEfforts.includes(reasoningEffort)) {
+      // Current effort not supported by any selected model — clamp to nearest valid
+      setReasoningEffort("none");
     }
-  }, [anySelectedSupportsReasoning]);
+  }, [anySelectedSupportsReasoning, availableEfforts, reasoningEffort]);
 
   // Extract categories dynamically from loaded prompts
   const categories = Array.from(new Set(prompts.map((p) => p.category)));
@@ -554,7 +570,7 @@ export default function GeneratePanel({
                           )}
                         </div>
                         <span className="truncate">{model.name}</span>
-                        {model.supportsReasoning && (
+                        {model.reasoningEfforts && model.reasoningEfforts.length > 0 && (
                           <span className="ml-auto text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0" title="Supports reasoning">
                             🧠
                           </span>
@@ -609,26 +625,44 @@ export default function GeneratePanel({
                 Reasoning Effort
               </label>
               <div className="flex gap-1.5">
-                {REASONING_EFFORTS.map((level) => (
-                  <button
-                    key={level.value}
-                    onClick={() => setReasoningEffort(level.value)}
-                    className={`flex-1 px-2 py-2.5 rounded-lg text-center transition-all border ${
-                      reasoningEffort === level.value
-                        ? level.value === "none"
-                          ? "bg-gray-700 border-gray-600 text-white"
-                          : "bg-amber-500/15 border-amber-500/50 text-amber-300"
-                        : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
-                    }`}
-                  >
-                    <div className="text-xs font-medium">{level.label}</div>
-                    <div className="text-[10px] text-gray-500 mt-0.5">{level.description}</div>
-                  </button>
-                ))}
+                {availableEfforts.map((effort) => {
+                  const info = EFFORT_LABELS[effort];
+                  return (
+                    <button
+                      key={effort}
+                      onClick={() => setReasoningEffort(effort)}
+                      className={`flex-1 px-2 py-2.5 rounded-lg text-center transition-all border ${
+                        reasoningEffort === effort
+                          ? effort === "none"
+                            ? "bg-gray-700 border-gray-600 text-white"
+                            : "bg-amber-500/15 border-amber-500/50 text-amber-300"
+                          : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                      }`}
+                    >
+                      <div className="text-xs font-medium">{info.label}</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">{info.description}</div>
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-xs text-gray-500">
-                Applied to supported models (Anthropic, OpenAI, Gemini). Higher effort = better quality, more cost.
-              </p>
+              {reasoningEffort !== "none" && (
+                <div className="text-xs text-gray-500 space-y-0.5">
+                  {selectedReasoningModels.map((m) => {
+                    const supported = m.reasoningEfforts?.includes(reasoningEffort);
+                    return (
+                      <div key={m.id} className="flex items-center gap-1.5">
+                        <span className={supported ? "text-green-400" : "text-gray-600"}>
+                          {supported ? "✓" : "–"}
+                        </span>
+                        <span className={supported ? "text-gray-400" : "text-gray-600"}>
+                          {m.name}
+                          {!supported && " (not supported, will skip reasoning)"}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 

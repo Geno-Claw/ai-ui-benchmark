@@ -1,10 +1,11 @@
-export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 export interface ModelConfig {
   id: string;
   openRouterId: string;
   name: string;
-  supportsReasoning?: boolean;
+  /** Available reasoning effort levels for this model (empty/undefined = no reasoning support) */
+  reasoningEfforts?: ReasoningEffort[];
 }
 
 export interface GenerateOptions {
