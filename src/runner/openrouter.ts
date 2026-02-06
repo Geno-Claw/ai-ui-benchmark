@@ -31,7 +31,11 @@ export async function callOpenRouter(
       const effort = options.reasoningEffort;
       const modelEfforts = options.model.reasoningEfforts;
       if (effort && effort !== "none" && modelEfforts?.includes(effort)) {
-        body.reasoning = { effort };
+        if (options.model.reasoningMode === "toggle") {
+          body.reasoning = { enabled: true };
+        } else {
+          body.reasoning = { effort };
+        }
       }
 
       const response = await fetch(OPENROUTER_URL, {

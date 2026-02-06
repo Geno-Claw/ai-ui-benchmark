@@ -1,4 +1,4 @@
-export type ReasoningEffort = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+export type ReasoningEffort = "none" | "on" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
 export interface ModelConfig {
   id: string;
@@ -6,6 +6,8 @@ export interface ModelConfig {
   name: string;
   /** Available reasoning effort levels for this model (empty/undefined = no reasoning support) */
   reasoningEfforts?: ReasoningEffort[];
+  /** 'effort' = granular levels sent as { effort }, 'toggle' = on/off sent as { enabled: true } */
+  reasoningMode?: "effort" | "toggle";
 }
 
 export interface GenerateOptions {

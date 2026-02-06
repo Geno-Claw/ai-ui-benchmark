@@ -126,7 +126,7 @@ export async function runBenchmark(
 
       // Look up per-model reasoning effort
       const effortStr = modelEfforts?.[model.id];
-      const validEfforts: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+      const validEfforts: ReasoningEffort[] = ["none", "on", "minimal", "low", "medium", "high", "xhigh"];
       const reasoningEffort: ReasoningEffort | undefined =
         effortStr && validEfforts.includes(effortStr as ReasoningEffort)
           ? (effortStr as ReasoningEffort)

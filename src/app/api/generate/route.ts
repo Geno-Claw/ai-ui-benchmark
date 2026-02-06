@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
 
       try {
         // Validate and pass per-model effort map
-        const validEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+        const validEfforts = ["none", "on", "minimal", "low", "medium", "high", "xhigh"];
         const validatedEfforts: Record<string, string> | undefined = modelEfforts
           ? Object.fromEntries(
               Object.entries(modelEfforts).filter(

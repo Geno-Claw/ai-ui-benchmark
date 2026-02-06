@@ -2,10 +2,10 @@ import { ModelConfig, ReasoningEffort } from "./types";
 
 /** Reasoning effort presets per provider */
 const OPENAI_EFFORTS: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh"];
-const ANTHROPIC_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high"];
-const ANTHROPIC_OPUS_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high", "max"];
+const ANTHROPIC_EFFORTS: ReasoningEffort[] = ["none", "on"];
 const GEMINI_3_EFFORTS: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high"];
 const GEMINI_25_EFFORTS: ReasoningEffort[] = ["none", "low", "medium", "high"];
+const TOGGLE_EFFORTS: ReasoningEffort[] = ["none", "on"];
 
 export const DEFAULT_MODELS: ModelConfig[] = [
   // Anthropic
@@ -13,13 +13,15 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     id: "claude-opus-4-6",
     openRouterId: "anthropic/claude-opus-4-6",
     name: "Claude Opus 4.6",
-    reasoningEfforts: ANTHROPIC_OPUS_EFFORTS,
+    reasoningEfforts: ANTHROPIC_EFFORTS,
+    reasoningMode: "toggle",
   },
   {
     id: "claude-sonnet-4-5",
     openRouterId: "anthropic/claude-sonnet-4-5",
     name: "Claude Sonnet 4.5",
     reasoningEfforts: ANTHROPIC_EFFORTS,
+    reasoningMode: "toggle",
   },
   // OpenAI
   {
@@ -27,18 +29,21 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     openRouterId: "openai/gpt-5.2",
     name: "GPT-5.2",
     reasoningEfforts: OPENAI_EFFORTS,
+    reasoningMode: "effort",
   },
   {
     id: "gpt-5-2-pro",
     openRouterId: "openai/gpt-5.2-pro",
     name: "GPT-5.2 Pro",
     reasoningEfforts: OPENAI_EFFORTS,
+    reasoningMode: "effort",
   },
   {
     id: "gpt-5-2-codex",
     openRouterId: "openai/gpt-5.2-codex",
     name: "GPT-5.2 Codex",
     reasoningEfforts: OPENAI_EFFORTS,
+    reasoningMode: "effort",
   },
   // Google
   {
@@ -46,28 +51,36 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     openRouterId: "google/gemini-3-pro-preview",
     name: "Gemini 3 Pro",
     reasoningEfforts: GEMINI_3_EFFORTS,
+    reasoningMode: "effort",
   },
   {
     id: "gemini-2-5-pro",
     openRouterId: "google/gemini-2.5-pro-preview-06-05",
     name: "Gemini 2.5 Pro",
     reasoningEfforts: GEMINI_25_EFFORTS,
+    reasoningMode: "effort",
   },
   {
     id: "gemini-2-5-flash",
     openRouterId: "google/gemini-2.5-flash",
     name: "Gemini 2.5 Flash",
+    reasoningEfforts: TOGGLE_EFFORTS,
+    reasoningMode: "toggle",
   },
   {
     id: "gemini-3-flash",
     openRouterId: "google/gemini-3-flash-preview",
     name: "Gemini 3 Flash",
+    reasoningEfforts: GEMINI_3_EFFORTS,
+    reasoningMode: "effort",
   },
   // DeepSeek
   {
     id: "deepseek-v3-2",
     openRouterId: "deepseek/deepseek-v3.2",
     name: "DeepSeek V3.2",
+    reasoningEfforts: TOGGLE_EFFORTS,
+    reasoningMode: "toggle",
   },
   // Qwen
   {
@@ -80,18 +93,24 @@ export const DEFAULT_MODELS: ModelConfig[] = [
     id: "kimi-k2-5",
     openRouterId: "moonshotai/kimi-k2.5",
     name: "Kimi K2.5",
+    reasoningEfforts: TOGGLE_EFFORTS,
+    reasoningMode: "toggle",
   },
   // Z-AI
   {
     id: "glm-4-7",
     openRouterId: "z-ai/glm-4.7",
     name: "GLM 4.7",
+    reasoningEfforts: TOGGLE_EFFORTS,
+    reasoningMode: "toggle",
   },
   // MiniMax
   {
     id: "minimax-m2-1",
     openRouterId: "minimax/minimax-m2.1",
     name: "MiniMax M2.1",
+    reasoningEfforts: TOGGLE_EFFORTS,
+    reasoningMode: "toggle",
   },
 ];
 

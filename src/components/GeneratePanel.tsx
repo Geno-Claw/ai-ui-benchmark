@@ -7,12 +7,12 @@ import { saveRun } from "@/lib/db";
 
 const EFFORT_LABELS: Record<ReasoningEffort, { label: string; short: string }> = {
   none: { label: "Off", short: "off" },
+  on: { label: "On", short: "on" },
   minimal: { label: "Min", short: "min" },
   low: { label: "Low", short: "low" },
   medium: { label: "Med", short: "med" },
   high: { label: "High", short: "high" },
   xhigh: { label: "XHigh", short: "xhi" },
-  max: { label: "Max", short: "max" },
 };
 import { formatCost } from "@/lib/utils";
 
@@ -161,10 +161,13 @@ export default function GeneratePanel({
         model.reasoningEfforts &&
         model.reasoningEfforts.length > 0
       ) {
-        if (effort !== "none" && model.reasoningEfforts.includes(effort)) {
+        if (effort === "none") continue; // omit = none
+        if (model.reasoningEfforts.includes(effort)) {
           next[model.id] = effort;
+        } else if (model.reasoningMode === "toggle") {
+          // Any non-none effort maps to "on" for toggle-only models
+          next[model.id] = "on";
         }
-        // if effort is "none" or not supported, omit from map (= "none")
       }
     }
     setModelEfforts(next);
