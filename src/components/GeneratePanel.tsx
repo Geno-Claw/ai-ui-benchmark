@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { PromptConfig, ReasoningEffort, Run } from "@/lib/types";
+import { useState, useEffect, useCallback } from "react";
+import { PromptConfig, ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
-import { saveRun } from "@/lib/db";
+import { ProgressState, GenerateParams } from "@/hooks/useBackgroundGeneration";
 
 const EFFORT_LABELS: Record<ReasoningEffort, { label: string; short: string }> = {
   none: { label: "Off", short: "off" },
@@ -17,44 +17,23 @@ const EFFORT_LABELS: Record<ReasoningEffort, { label: string; short: string }> =
 import { formatCost } from "@/lib/utils";
 
 interface GeneratePanelProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
-  onComplete: (runId: string) => void;
-}
-
-interface ModelStatus {
-  completed: number;
-  total: number;
-  error?: boolean;
-  lastError?: string;
-}
-
-interface GenerationProgress {
-  status: "idle" | "generating" | "complete" | "error";
-  message: string;
-  current: number;
-  total: number;
-  cost?: number;
-  modelStatuses?: Record<string, ModelStatus>;
-}
-
-interface ProgressEvent {
-  model: string;
-  variant: number;
-  status: "generating" | "complete" | "error";
-  total: number;
-  completed: number;
-  cost?: number;
-  durationMs?: number;
-  tokens?: { input: number; output: number };
-  error?: string;
+  onRunGenerated: (runId: string) => void;
+  progress: ProgressState;
+  onStartGeneration: (params: GenerateParams) => void;
+  onCancelGeneration: () => void;
+  getEstimatedTimeRemaining?: () => number | null;
 }
 
 /** Modal panel for starting a new benchmark run. */
 export default function GeneratePanel({
-  isOpen,
+  open,
   onClose,
-  onComplete,
+  progress,
+  onStartGeneration,
+  onCancelGeneration,
+  getEstimatedTimeRemaining,
 }: GeneratePanelProps) {
   const [prompts, setPrompts] = useState<PromptConfig[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>("custom");
@@ -65,17 +44,6 @@ export default function GeneratePanel({
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
   const [modelEfforts, setModelEfforts] = useState<Record<string, ReasoningEffort>>({});
-  const [progress, setProgress] = useState<GenerationProgress>({
-    status: "idle",
-    message: "",
-    current: 0,
-    total: 0,
-  });
-
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const totalCostRef = useRef(0);
-  const completedTimesRef = useRef<number[]>([]);
-  const startTimeRef = useRef<number>(0);
 
   const modelGroups = getModelGroups();
 
@@ -97,13 +65,13 @@ export default function GeneratePanel({
 
   // Load prompts from API
   useEffect(() => {
-    if (isOpen) {
+    if (open) {
       fetch("/api/prompts")
         .then((res) => res.json())
         .then((data: PromptConfig[]) => setPrompts(data))
         .catch(() => setPrompts([]));
     }
-  }, [isOpen]);
+  }, [open]);
 
   // Extract categories dynamically from loaded prompts
   const categories = Array.from(new Set(prompts.map((p) => p.category)));
@@ -191,216 +159,27 @@ export default function GeneratePanel({
     return hasApiKey && hasPrompt && hasModels && progress.status !== "generating";
   }, [selectedPromptId, customPrompt, selectedModels, progress.status]);
 
-  const getEstimatedTimeRemaining = useCallback(() => {
-    if (completedTimesRef.current.length < 2 || progress.current === 0) return null;
-    const elapsed = Date.now() - startTimeRef.current;
-    const avgPerVariant = elapsed / progress.current;
-    const remaining = (progress.total - progress.current) * avgPerVariant;
-    if (remaining < 1000) return "< 1s";
-    if (remaining < 60000) return `~${Math.ceil(remaining / 1000)}s`;
-    return `~${Math.ceil(remaining / 60000)}m`;
-  }, [progress]);
+  const handleGenerate = () => {
+    const params: GenerateParams = {
+      models: Array.from(selectedModels),
+      mode,
+    };
 
-  const handleGenerate = async () => {
-    const apiKey = localStorage.getItem("openrouter-api-key");
-    if (!apiKey) {
-      setProgress({
-        status: "error",
-        message: "No API key set. Configure it in Settings first.",
-        current: 0,
-        total: 0,
-      });
-      return;
+    // Send per-model efforts (only non-none entries)
+    if (activeEfforts.length > 0) {
+      params.modelEfforts = modelEfforts;
     }
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    totalCostRef.current = 0;
-    completedTimesRef.current = [];
-    startTimeRef.current = Date.now();
-
-    const totalVariants = selectedModels.size * 5;
-    const variantsPerModel = 5;
-
-    // Initialize model statuses
-    const initialStatuses: Record<string, ModelStatus> = {};
-    for (const modelId of selectedModels) {
-      initialStatuses[modelId] = { completed: 0, total: variantsPerModel };
+    if (selectedPromptId === "custom") {
+      params.prompt = customPrompt.trim();
+    } else {
+      params.promptId = selectedPromptId;
     }
 
-    setProgress({
-      status: "generating",
-      message: "Starting benchmark…",
-      current: 0,
-      total: totalVariants,
-      cost: 0,
-      modelStatuses: initialStatuses,
-    });
-
-    try {
-      const body: Record<string, unknown> = {
-        models: Array.from(selectedModels),
-        mode,
-      };
-
-      // Send per-model efforts (only non-none entries)
-      if (activeEfforts.length > 0) {
-        body.modelEfforts = modelEfforts;
-      }
-
-      if (selectedPromptId === "custom") {
-        body.prompt = customPrompt.trim();
-      } else {
-        body.promptId = selectedPromptId;
-      }
-
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-openrouter-key": apiKey,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        // Non-SSE error response (validation errors)
-        const err = await res.json();
-        throw new Error(err.error || `HTTP ${res.status}`);
-      }
-
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const blocks = buffer.split("\n\n");
-        buffer = blocks.pop() || "";
-
-        for (const block of blocks) {
-          if (!block.trim()) continue;
-
-          const eventMatch = block.match(/^event: (.+)/m);
-          const dataMatch = block.match(/^data: (.+)/m);
-          if (!eventMatch || !dataMatch) continue;
-
-          const event = eventMatch[1];
-          const data = JSON.parse(dataMatch[1]);
-
-          if (event === "progress") {
-            const pe = data as ProgressEvent;
-
-            // Accumulate cost
-            if (pe.cost && pe.status === "complete") {
-              totalCostRef.current += pe.cost;
-            }
-
-            // Track completion times for ETA
-            if (pe.status === "complete" || pe.status === "error") {
-              completedTimesRef.current.push(Date.now());
-            }
-
-            setProgress((prev) => {
-              const modelStatuses = { ...(prev.modelStatuses || {}) };
-              const ms = modelStatuses[pe.model] || {
-                completed: 0,
-                total: variantsPerModel,
-              };
-
-              if (pe.status === "complete") {
-                modelStatuses[pe.model] = {
-                  ...ms,
-                  completed: ms.completed + 1,
-                };
-              } else if (pe.status === "error") {
-                modelStatuses[pe.model] = {
-                  ...ms,
-                  completed: ms.completed + 1,
-                  error: true,
-                  lastError: pe.error,
-                };
-              }
-
-              const modelName =
-                DEFAULT_MODELS.find((m) => m.id === pe.model)?.name || pe.model;
-              const message =
-                pe.status === "generating"
-                  ? `${modelName} — variant ${pe.variant}/5`
-                  : pe.status === "complete"
-                    ? `${modelName} — variant ${pe.variant}/5 ✓`
-                    : `${modelName} — variant ${pe.variant}/5 ✗`;
-
-              return {
-                status: "generating",
-                message,
-                current: pe.completed,
-                total: pe.total,
-                cost: totalCostRef.current,
-                modelStatuses,
-              };
-            });
-          } else if (event === "complete") {
-            // Save full run data to IndexedDB
-            const run = data as Run;
-            await saveRun(run);
-
-            setProgress((prev) => ({
-              ...prev,
-              status: "complete",
-              message: "Benchmark complete!",
-              current: totalVariants,
-              total: totalVariants,
-            }));
-
-            // Notify parent after brief delay
-            setTimeout(() => {
-              onComplete(run.id);
-              setProgress({
-                status: "idle",
-                message: "",
-                current: 0,
-                total: 0,
-              });
-            }, 1500);
-          } else if (event === "error") {
-            setProgress((prev) => ({
-              ...prev,
-              status: "error",
-              message: data.error || "Unknown error",
-            }));
-          }
-        }
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setProgress({
-          status: "idle",
-          message: "Cancelled",
-          current: 0,
-          total: 0,
-        });
-      } else {
-        setProgress((prev) => ({
-          ...prev,
-          status: "error",
-          message: err instanceof Error ? err.message : "Generation failed",
-        }));
-      }
-    } finally {
-      abortControllerRef.current = null;
-    }
+    onStartGeneration(params);
   };
 
-  const handleCancel = () => {
-    abortControllerRef.current?.abort();
-  };
-
-  if (!isOpen) return null;
+  if (!open) return null;
 
   const hasApiKey =
     typeof window !== "undefined" &&
@@ -410,7 +189,15 @@ export default function GeneratePanel({
     progress.total > 0
       ? Math.round((progress.current / progress.total) * 100)
       : 0;
-  const eta = getEstimatedTimeRemaining();
+
+  const etaMs = getEstimatedTimeRemaining?.();
+  const eta = etaMs != null
+    ? etaMs < 1000
+      ? "< 1s"
+      : etaMs < 60000
+        ? `~${Math.ceil(etaMs / 1000)}s`
+        : `~${Math.ceil(etaMs / 60000)}m`
+    : null;
 
   /** Build short reasoning summary for the status bar */
   const reasoningSummary = (() => {
@@ -432,7 +219,7 @@ export default function GeneratePanel({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 z-40"
-        onClick={progress.status !== "generating" ? onClose : undefined}
+        onClick={onClose}
       />
 
       {/* Modal */}
@@ -444,8 +231,7 @@ export default function GeneratePanel({
           </h2>
           <button
             onClick={onClose}
-            disabled={progress.status === "generating"}
-            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
           >
             <svg
               className="w-5 h-5"
@@ -913,7 +699,13 @@ export default function GeneratePanel({
             {progress.status === "generating" ? (
               <>
                 <button
-                  onClick={handleCancel}
+                  onClick={onClose}
+                  className="px-4 py-3 rounded-lg text-sm font-semibold bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                >
+                  Minimize
+                </button>
+                <button
+                  onClick={onCancelGeneration}
                   className="px-4 py-3 rounded-lg text-sm font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30 transition-colors"
                 >
                   Cancel

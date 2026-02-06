@@ -9,10 +9,11 @@ import ComparisonSlot from "./ComparisonSlot";
 interface GalleryProps {
   run: Run;
   onFullscreen: (modelId: string, variant: number) => void;
+  isGenerating?: boolean;
 }
 
 /** Grid view of all designs from a benchmark run, grouped by model. */
-export default function Gallery({ run, onFullscreen }: GalleryProps) {
+export default function Gallery({ run, onFullscreen, isGenerating }: GalleryProps) {
   const modelNameMap: Record<string, string> = {};
   for (const m of DEFAULT_MODELS) {
     modelNameMap[m.id] = m.name;
@@ -82,6 +83,7 @@ export default function Gallery({ run, onFullscreen }: GalleryProps) {
                 modelNames={modelNameMap}
                 onModelChange={(newId) => handleModelChange(originalModelId, newId)}
                 onFullscreen={onFullscreen}
+                isGenerating={isGenerating}
               />
             </div>
           );

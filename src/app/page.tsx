@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { RunSummary, Run, GenerationResult } from "@/lib/types";
 import { DEFAULT_MODELS } from "@/lib/config";
 import { loadRuns as dbLoadRuns, loadRun as dbLoadRun, deleteRun as dbDeleteRun } from "@/lib/db";
+import { useBackgroundGeneration } from "@/hooks/useBackgroundGeneration";
 import RunSelector from "@/components/RunSelector";
 import Gallery from "@/components/Gallery";
 import ComparisonSlot from "@/components/ComparisonSlot";
@@ -47,6 +48,24 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleGenerateComplete = useCallback(
+    (runId: string) => {
+      fetchRuns().then(() => setCurrentRunId(runId));
+    },
+    [fetchRuns]
+  );
+
+  const {
+    progress,
+    partialRun,
+    activeRunId,
+    startGeneration,
+    cancelGeneration,
+    getEstimatedTimeRemaining,
+  } = useBackgroundGeneration({
+    onComplete: handleGenerateComplete,
+  });
+
   // Load runs on mount
   useEffect(() => { fetchRuns(); }, [fetchRuns]);
 
@@ -63,6 +82,13 @@ export default function Home() {
       .finally(() => setRunLoading(false));
   }, [currentRunId]);
 
+  // Auto-switch to in-progress run when activeRunId changes
+  useEffect(() => {
+    if (activeRunId) {
+      setCurrentRunId(activeRunId);
+    }
+  }, [activeRunId]);
+
   const handleDeleteRun = async (runId: string) => {
     try {
       await dbDeleteRun(runId);
@@ -76,29 +102,42 @@ export default function Home() {
     }
   };
 
-  const handleGenerateComplete = useCallback(
-    (runId: string) => {
-      setGenerateOpen(false);
-      fetchRuns().then(() => setCurrentRunId(runId));
-    },
-    [fetchRuns]
-  );
-
   const handleFullscreen = (modelId: string, variant: number) => {
     setFullscreen({ modelId, variant });
   };
 
+  // Compute displayRun: show partialRun when viewing the active generation
+  const displayRun = useMemo(() => {
+    if (currentRunId === activeRunId && partialRun) {
+      return partialRun;
+    }
+    return currentRun;
+  }, [currentRunId, activeRunId, partialRun, currentRun]);
+
+  // Add in-progress run to runs list for RunSelector
+  const displayRuns = useMemo(() => {
+    if (!activeRunId || !partialRun) return runs;
+    // Check if the activeRunId is already in the runs list
+    if (runs.some((r) => r.id === activeRunId)) return runs;
+    // Add partial run summary to the top
+    const { designs: _designs, ...summary } = partialRun;
+    void _designs;
+    return [summary as RunSummary, ...runs];
+  }, [runs, activeRunId, partialRun]);
+
+  const isGenerating = progress.status === "generating";
+
   // Fullscreen overlay
   const renderFullscreen = () => {
-    if (!fullscreen || !currentRun) return null;
+    if (!fullscreen || !displayRun) return null;
 
     const results: GenerationResult[] =
-      currentRun.designs[fullscreen.modelId] || [];
+      displayRun.designs[fullscreen.modelId] || [];
     const modelName = modelNames[fullscreen.modelId] || fullscreen.modelId;
 
     // Also add model names from the run
     const runModelNames = { ...modelNames };
-    for (const mId of currentRun.models) {
+    for (const mId of displayRun.models) {
       if (!runModelNames[mId]) runModelNames[mId] = mId;
     }
 
@@ -113,7 +152,7 @@ export default function Home() {
             results={results}
             modelId={fullscreen.modelId}
             modelName={modelName}
-            allModels={currentRun.models}
+            allModels={displayRun.models}
             modelNames={runModelNames}
             onModelChange={(newId) =>
               setFullscreen({ modelId: newId, variant: fullscreen.variant })
@@ -143,11 +182,22 @@ export default function Home() {
 
           {/* Run Selector */}
           <RunSelector
-            runs={runs}
+            runs={displayRuns}
             currentRunId={currentRunId}
             onSelect={setCurrentRunId}
             onDelete={handleDeleteRun}
           />
+
+          {/* Background generation indicator pill */}
+          {!generateOpen && isGenerating && (
+            <button
+              onClick={() => setGenerateOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition-colors animate-pulse"
+            >
+              <span>⚡</span>
+              <span>Generating {progress.current}/{progress.total}</span>
+            </button>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -188,7 +238,7 @@ export default function Home() {
               <p className="text-gray-500 text-sm">Loading runs…</p>
             </div>
           </div>
-        ) : runs.length === 0 ? (
+        ) : runs.length === 0 && !activeRunId ? (
           /* Empty State */
           <div className="flex items-center justify-center h-[calc(100vh-60px)]">
             <div className="max-w-lg text-center space-y-6 px-6">
@@ -245,7 +295,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        ) : runLoading ? (
+        ) : runLoading && !displayRun ? (
           <div className="flex items-center justify-center h-96">
             <div className="flex flex-col items-center gap-3">
               <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -255,8 +305,12 @@ export default function Home() {
               <p className="text-gray-500 text-sm">Loading run data…</p>
             </div>
           </div>
-        ) : currentRun ? (
-          <Gallery run={currentRun} onFullscreen={handleFullscreen} />
+        ) : displayRun ? (
+          <Gallery
+            run={displayRun}
+            onFullscreen={handleFullscreen}
+            isGenerating={currentRunId === activeRunId && isGenerating}
+          />
         ) : (
           <div className="flex items-center justify-center h-96">
             <p className="text-gray-500">Select a run to view designs</p>
@@ -267,9 +321,13 @@ export default function Home() {
       {/* Modals / Panels */}
       <Settings isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <GeneratePanel
-        isOpen={generateOpen}
+        open={generateOpen}
         onClose={() => setGenerateOpen(false)}
-        onComplete={handleGenerateComplete}
+        onRunGenerated={handleGenerateComplete}
+        progress={progress}
+        onStartGeneration={startGeneration}
+        onCancelGeneration={cancelGeneration}
+        getEstimatedTimeRemaining={getEstimatedTimeRemaining}
       />
 
       {/* Fullscreen overlay */}

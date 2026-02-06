@@ -125,6 +125,9 @@ export async function POST(request: NextRequest) {
           apiKey,
           modelEfforts: validatedEfforts,
           signal: abortController.signal,
+          onInit: (metadata) => {
+            send("init", metadata);
+          },
           onProgress: (update) => {
             send("progress", update);
           },

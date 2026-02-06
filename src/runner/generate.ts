@@ -12,12 +12,22 @@ export interface BenchmarkOptions {
   apiKey: string;
   variantsPerModel?: number;
   onProgress?: (update: ProgressUpdate) => void;
+  onInit?: (metadata: {
+    runId: string;
+    prompt: string;
+    promptTitle: string;
+    models: string[];
+    mode: string;
+    date: string;
+    totalVariants: number;
+  }) => void;
   signal?: AbortSignal;
   /** Per-model reasoning effort map (modelId → effort level) */
   modelEfforts?: Record<string, string>;
 }
 
 export interface ProgressUpdate {
+  runId: string;
   model: string;
   variant: number;
   status: "generating" | "complete" | "error";
@@ -27,6 +37,7 @@ export interface ProgressUpdate {
   durationMs?: number;
   tokens?: { input: number; output: number };
   error?: string;
+  result?: GenerationResult;
 }
 
 export interface BenchmarkResult {
@@ -108,6 +119,7 @@ export async function runBenchmark(
     apiKey,
     variantsPerModel = 5,
     onProgress,
+    onInit,
     signal,
     modelEfforts,
   } = options;
@@ -117,6 +129,17 @@ export async function runBenchmark(
   let completed = 0;
 
   console.log(`[runner] Run ${runId}: ${total} total variants (${models.length} models × ${variantsPerModel} variants)`);
+
+  // Notify caller with run metadata before any generation starts
+  onInit?.({
+    runId,
+    prompt,
+    promptTitle,
+    models: models.map((m) => m.id),
+    mode,
+    date: new Date().toISOString(),
+    totalVariants: total,
+  });
 
   // Generate for all models in parallel, variants sequential within each
   const modelResults = await Promise.all(
@@ -146,6 +169,7 @@ export async function runBenchmark(
 
         // Report generating
         onProgress?.({
+          runId,
           model: model.id,
           variant: variantNum,
           status: "generating",
@@ -174,8 +198,9 @@ export async function runBenchmark(
           console.log(`[runner] ${model.id} variant ${variantNum}: done (${result.durationMs}ms, ${result.tokens.output} tokens)`);
         }
 
-        // Report completion with cost/duration/tokens
+        // Report completion with cost/duration/tokens and full result
         onProgress?.({
+          runId,
           model: model.id,
           variant: variantNum,
           status: result.error ? "error" : "complete",
@@ -185,6 +210,7 @@ export async function runBenchmark(
           durationMs: result.durationMs,
           tokens: result.tokens,
           error: result.error,
+          result,
         });
       }
 
