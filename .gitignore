@@ -48,3 +48,8 @@ next-env.d.ts
 # Vercel
 .vercel
 .claude/settings.local.json
+
+/.next
+/node_modules
+/archive
+.claude/settings.local.json
