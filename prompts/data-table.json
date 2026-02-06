@@ -1,0 +1,7 @@
+{
+  "id": "data-table",
+  "title": "Interactive Data Table",
+  "category": "Components",
+  "description": "An interactive data table with sorting, filtering, pagination, row selection, and inline editing",
+  "prompt": "Create a complete interactive data table component for managing a list of users or employees. Include a toolbar above the table with a search input that filters across all columns, column visibility toggles in a dropdown, a filter button that opens filter controls for status and role columns, and bulk action buttons (Delete Selected, Export CSV) that appear when rows are selected. The table should display columns for: checkbox, Name (with avatar), Email, Role (badge), Status (colored dot + label), Join Date, and an Actions column with Edit/Delete icon buttons. Populate with 15-20 rows of realistic placeholder data. Implement clickable column headers with sort direction indicators (ascending/descending/none), a select-all checkbox in the header, individual row selection with a highlighted state, hover row highlighting, and pagination controls at the bottom showing items per page (10/25/50), page numbers, and total count. When clicking Edit on a row, show inline editing with text inputs replacing the cell values and Save/Cancel buttons. Use a clean design with a white card on a light gray background, subtle borders, and smooth transitions. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "signup-form",
+  "title": "Multi-Step Signup Form",
+  "category": "Forms & Inputs",
+  "description": "A multi-step registration form with validation, progress indicator, and smooth transitions",
+  "prompt": "Create a complete multi-step signup form with the following features: 1) A progress stepper at the top showing 3-4 steps: Account Info, Personal Details, Preferences, and Confirmation. The current step should be highlighted and completed steps should show a checkmark. 2) Step 1 — Account: Email input with format validation, password input with strength indicator (weak/medium/strong with color bar), confirm password with match validation. 3) Step 2 — Personal: First name, last name, phone number with formatting, date of birth picker, and optional avatar upload area with drag-and-drop styling. 4) Step 3 — Preferences: A set of toggles or checkboxes for notification preferences, a dropdown for timezone selection, and a radio group for account type (Personal/Business/Developer). 5) Step 4 — Confirmation: Summary of all entered data with an edit button for each section, terms of service checkbox, and a prominent 'Create Account' button. Include smooth slide transitions between steps, real-time inline validation with error messages, disabled 'Next' button until validation passes, and a 'Back' button on each step. Use only HTML, CSS, and vanilla JavaScript. Use Google Fonts. The design should feel modern and trustworthy — suitable for a fintech or productivity SaaS product."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "agency-landing",
+  "title": "Creative Agency Landing",
+  "category": "Landing Pages",
+  "description": "A creative agency landing page with portfolio showcase, team section, and client testimonials",
+  "prompt": "Create a complete landing page for a creative digital agency. Include a bold hero section with a full-width background image or gradient, animated headline text, and a 'View Our Work' CTA button. Add a portfolio showcase section displaying 6 project thumbnails in a masonry or grid layout with hover overlays that reveal project title and category. Include a 'Meet the Team' section with circular avatar placeholders, names, roles, and social media icon links. Add a client testimonials carousel with quote marks, client name, company, and navigation dots. Finish with a contact section featuring a sleek inquiry form (name, email, project type dropdown, message) and the agency's address and social links in the footer. Use bold typography contrasts, smooth scroll-triggered fade-in animations, and a sophisticated dark or neutral color palette with one vibrant accent color. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

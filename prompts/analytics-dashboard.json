@@ -1,0 +1,7 @@
+{
+  "id": "analytics-dashboard",
+  "title": "Analytics Dashboard",
+  "category": "Dashboards",
+  "description": "A data-rich analytics dashboard with charts, KPIs, and real-time metrics",
+  "prompt": "Create a complete analytics dashboard page with the following elements: 1) A top navigation bar with the app name, search bar, notifications icon, and user avatar. 2) A row of 4-6 KPI cards showing metrics like Total Revenue, Active Users, Conversion Rate, and Avg Session Duration — each with a value, percentage change indicator (up/down arrow with green/red color), and a sparkline or mini chart. 3) A main chart area showing a large line or area chart for 'Revenue Over Time' with a 7-day/30-day/90-day toggle. 4) A secondary row with two charts side by side: a donut/pie chart for 'Traffic Sources' and a horizontal bar chart for 'Top Pages'. 5) A data table at the bottom showing recent transactions or events with columns for date, user, action, amount, and status badge. Use a dark theme with a sidebar navigation that includes icons for Dashboard, Analytics, Users, Settings. Include realistic placeholder data, smooth hover effects, and make the layout responsive. Use only HTML, CSS (inline or in a style tag), and vanilla JavaScript for any interactivity. Use Google Fonts for typography. Include subtle animations on page load (fade-in, slide-up for cards)."
+}
