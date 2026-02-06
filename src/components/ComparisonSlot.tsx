@@ -54,7 +54,7 @@ export default function ComparisonSlot({
   const durationSec = (result.durationMs / 1000).toFixed(1);
 
   return (
-    <div className={`flex flex-col rounded-xl border border-gray-800 bg-gray-900 overflow-hidden ${isFullscreen ? "fixed inset-4 z-50" : ""}`}>
+    <div className={`flex flex-col rounded-xl border border-gray-800 bg-gray-900 overflow-hidden ${isFullscreen ? "fixed inset-4 z-50" : "h-full"}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900 shrink-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
