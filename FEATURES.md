@@ -68,6 +68,13 @@
 - [x] **Metadata display** — generation time, token count, and cost for each design
 - [x] **Run selector** — dropdown with run list showing date, prompt title, mode, and model count
 - [x] **Delete runs** — inline delete with click-to-confirm safety
+- [x] **Archive search & filter** — client-side search/filter in the run selector dropdown
+  - [x] Search input filters runs by prompt title, prompt text, or run ID
+  - [x] Mode filter chips: All / Raw / Skill
+  - [x] Model filter dropdown: filter to runs that include a specific model
+  - [x] Result count showing filtered vs total runs
+  - [x] Clear filters button to reset all filters at once
+  - [x] Active filter indicator (blue dot) on the trigger button
 - [x] **Settings panel** — slide-over for OpenRouter API key management
   - [x] Show/hide toggle for key
   - [x] Test Connection button (calls `/api/test-key`)
@@ -88,7 +95,7 @@
 
 ### Future Enhancements
 - [ ] Side-by-side layout mode (2-4 fixed slots)
-- [ ] Client-side search/filter over archived runs
+- [x] Client-side search/filter over archived runs
 - [ ] Responsive preview controls (mobile/tablet/desktop viewport widths)
 - [ ] Export run as zip download
 - [ ] URL-based deep linking to specific run/model/variant
