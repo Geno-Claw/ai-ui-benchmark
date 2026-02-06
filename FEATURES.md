@@ -13,10 +13,10 @@
 - [ ] Raw prompt mode — plain natural language prompt
 - [ ] Skill-augmented mode — prompt + front-end design skill context
 
-### Rating & Comparison
-- [ ] Manual rating system (1-5 stars or similar)
-- [ ] Side-by-side diff view
-- [ ] Export results/reports
+### Archive & Retrieval
+- [ ] Save runs to archive (prompt, model, outputs, metadata)
+- [ ] Browse/search archived runs
+- [ ] Re-open archived designs for comparison
 
 ### Models
 - [ ] Claude Opus 4.6

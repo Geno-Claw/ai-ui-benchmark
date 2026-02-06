@@ -28,7 +28,7 @@ Each model receives the same prompt **plus** the claude-code/front-end design sk
 - **Side-by-side comparison UI** — easily swap between all designs
 - **Live preview** — render each design in an iframe or similar
 - **Metadata tracking** — model, prompt, generation time, token usage
-- **Scoring/rating system** — manual rating for each design
+- **Archive system** — save runs for later retrieval and comparison
 
 ## Tech Stack
 
