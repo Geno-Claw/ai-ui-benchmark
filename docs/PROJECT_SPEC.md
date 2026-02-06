@@ -66,11 +66,11 @@ A personal developer tool to evaluate and compare how different AI models genera
 
 ## Feature Requirements
 
-### 1. Prompt Runner (CLI)
+### 1. Prompt Runner (Server-side, triggered from UI)
 
 | Requirement | Detail |
 |---|---|
-| **Command** | `npm run generate -- --prompt <id\|text> --models <list> --mode <raw\|skill>` |
+| **Trigger** | UI sends POST to `/api/generate` with prompt, models, mode, and API keys in headers |
 | **Models** | Claude Opus 4.6, Claude Sonnet 4.5, GPT-5.2, Gemini 2.5 Pro (extensible) |
 | **Variants** | 5 unique designs per model per prompt |
 | **Variance method** | Vary temperature and/or include explicit "make this unique" instruction per variant |
@@ -81,7 +81,7 @@ A personal developer tool to evaluate and compare how different AI models genera
 | **Metadata** | `meta.json` per run and per model with tokens, time, cost, prompt text |
 | **Concurrency** | Parallel requests across models, sequential within variants (to avoid rate limits) |
 | **Error handling** | Retry failed generations up to 2x, log failures in metadata |
-| **Progress** | CLI progress output showing which model/variant is generating |
+| **Progress** | Real-time progress updates via SSE or polling (which model/variant is generating) |
 
 ### 2. Prompt Bank
 
@@ -313,21 +313,15 @@ Browser (localStorage)
 
 ### API Key Management
 
-API keys are **never** stored in code, config files, or committed to the repo. Two storage methods:
+API keys are **never** stored in code, config files, or committed to the repo.
 
-**1. Browser Configuration (Primary — for the UI)**
+**Browser localStorage only:**
 - Settings page in the UI where users enter their API keys
-- Keys stored in **browser localStorage** — never sent to the server or saved to disk
+- Keys stored in **browser localStorage** — never sent to the server or saved to disk outside the browser
 - Keys passed to API routes via request headers (over localhost only)
 - Clear/reset button to wipe stored keys
 - Visual indicator showing which models are configured vs missing keys
-
-**2. Environment Variables (Fallback — for CLI runner)**
-- `.env` file (gitignored) for headless CLI usage
-- `.env.example` committed with placeholder values and instructions
-- Runner checks env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY`
-
-**Priority**: UI localStorage keys take precedence when running via the web UI. Env vars used as fallback and for CLI-only usage.
+- All generation triggered from the UI (no separate CLI)
 
 ### Security Rules
 
