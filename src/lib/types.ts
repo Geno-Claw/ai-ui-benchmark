@@ -35,6 +35,14 @@ export interface Run extends RunSummary {
   designs: Record<string, GenerationResult[]>;
 }
 
+export interface PromptConfig {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  prompt: string;
+}
+
 export interface AppState {
   currentRunId: string | null;
   layoutMode: "gallery" | "sideBySide" | "fullscreen";

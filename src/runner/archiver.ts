@@ -27,7 +27,7 @@ export async function saveRun(run: Run): Promise<void> {
     }
   }
 
-  // Save run metadata
+  // Save run metadata (without full HTML content to keep meta.json small)
   const meta = {
     id: run.id,
     prompt: run.prompt,
@@ -39,7 +39,7 @@ export async function saveRun(run: Run): Promise<void> {
     designs: Object.fromEntries(
       Object.entries(run.designs).map(([modelId, variants]) => [
         modelId,
-        variants.map(({ html: _html, ...meta }: GenerationResult) => meta),
+        variants.map(({ html: _html, ...rest }: GenerationResult) => rest),
       ])
     ),
   };
@@ -101,6 +101,62 @@ export async function loadIndex(): Promise<RunSummary[]> {
 }
 
 /**
+ * Load a full run from the archive, including HTML variant content.
+ */
+export async function loadRun(runId: string): Promise<Run | null> {
+  const runDir = path.join(ARCHIVE_DIR, runId);
+  const metaPath = path.join(runDir, "meta.json");
+
+  try {
+    const metaContent = await fs.readFile(metaPath, "utf-8");
+    const meta = JSON.parse(metaContent);
+
+    // Reconstruct designs with full HTML content
+    const designs: Record<string, GenerationResult[]> = {};
+
+    for (const modelId of meta.models as string[]) {
+      const modelDir = path.join(runDir, modelId);
+      const metaDesigns = meta.designs?.[modelId] ?? [];
+      const variants: GenerationResult[] = [];
+
+      for (let i = 0; i < metaDesigns.length; i++) {
+        const htmlPath = path.join(modelDir, `variant-${i + 1}.html`);
+        let html = "";
+        try {
+          html = await fs.readFile(htmlPath, "utf-8");
+        } catch {
+          // HTML file might not exist if generation errored
+        }
+
+        variants.push({
+          html,
+          tokens: metaDesigns[i].tokens ?? { input: 0, output: 0 },
+          durationMs: metaDesigns[i].durationMs ?? 0,
+          model: metaDesigns[i].model ?? modelId,
+          cost: metaDesigns[i].cost,
+          error: metaDesigns[i].error,
+        });
+      }
+
+      designs[modelId] = variants;
+    }
+
+    return {
+      id: meta.id,
+      prompt: meta.prompt,
+      promptTitle: meta.promptTitle,
+      models: meta.models,
+      mode: meta.mode,
+      date: meta.date,
+      totalVariants: meta.totalVariants,
+      designs,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Delete an archived run.
  */
 export async function deleteRun(runId: string): Promise<void> {
@@ -110,5 +166,6 @@ export async function deleteRun(runId: string): Promise<void> {
   // Update index
   const index = await loadIndex();
   const filtered = index.filter((r) => r.id !== runId);
+  await fs.mkdir(ARCHIVE_DIR, { recursive: true });
   await fs.writeFile(INDEX_PATH, JSON.stringify(filtered, null, 2), "utf-8");
 }

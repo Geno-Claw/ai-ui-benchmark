@@ -1,29 +1,82 @@
 import { GenerateOptions, GenerationResult } from "@/lib/types";
 
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const MAX_RETRIES = 2;
+
 /**
  * Send a generation request to OpenRouter.
- * Uses the OpenAI-compatible chat completions API.
+ * Uses the OpenAI-compatible chat completions API with plain fetch().
  */
 export async function callOpenRouter(
   prompt: string,
   options: GenerateOptions
 ): Promise<GenerationResult> {
   const start = Date.now();
+  let lastError: string | undefined;
 
-  // TODO: Implement OpenRouter API call
-  // POST https://openrouter.ai/api/v1/chat/completions
-  // Headers: Authorization: Bearer <apiKey>, HTTP-Referer, X-Title
-  // Body: { model, messages, temperature }
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${options.apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "AI UI Benchmark",
+        },
+        body: JSON.stringify({
+          model: options.model.openRouterId,
+          messages: [{ role: "user", content: prompt }],
+          temperature: options.temperature ?? 0.9,
+        }),
+      });
 
-  const _prompt = prompt;
-  const _options = options;
-  void _prompt;
-  void _options;
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(
+          `OpenRouter API error ${response.status}: ${errorBody}`
+        );
+      }
 
+      const data = await response.json();
+
+      // Extract the generated content
+      const content = data.choices?.[0]?.message?.content ?? "";
+
+      // Extract token usage
+      const usage = data.usage ?? {};
+      const tokens = {
+        input: usage.prompt_tokens ?? 0,
+        output: usage.completion_tokens ?? 0,
+      };
+
+      return {
+        html: content,
+        tokens,
+        durationMs: Date.now() - start,
+        model: options.model.openRouterId,
+        cost: data.usage?.total_cost ?? undefined,
+      };
+    } catch (err) {
+      lastError =
+        err instanceof Error ? err.message : "Unknown error during generation";
+
+      // Don't retry on the last attempt
+      if (attempt < MAX_RETRIES) {
+        // Brief backoff before retry
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * (attempt + 1))
+        );
+      }
+    }
+  }
+
+  // All retries exhausted
   return {
-    html: "<!-- TODO: Implement OpenRouter integration -->",
+    html: "",
     tokens: { input: 0, output: 0 },
     durationMs: Date.now() - start,
     model: options.model.openRouterId,
+    error: lastError ?? "Generation failed after retries",
   };
 }

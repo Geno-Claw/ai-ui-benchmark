@@ -1,0 +1,7 @@
+{
+  "id": "portfolio-site",
+  "title": "Creative Portfolio Landing Page",
+  "category": "Landing Pages",
+  "description": "A visually striking portfolio page for a creative professional with project showcase and contact section",
+  "prompt": "Create a complete creative portfolio landing page for a UI/UX designer with the following sections: 1) A hero section with a large, bold name/title treatment, a brief tagline about the designer's philosophy, and a subtle animated background (CSS-only particles, gradient mesh, or geometric patterns). 2) An 'About' section with a brief bio, key skills shown as stylized tags or a visual skill chart, and years of experience / projects completed stats with animated counters. 3) A project showcase grid showing 4-6 portfolio pieces. Each card should have a hover effect that reveals the project title, category, and a 'View Project' link. Use placeholder images via CSS gradients or patterns (no external image URLs). 4) A testimonials section with 2-3 client quotes in a creative layout (not just basic cards — try overlapping elements, pull quotes, or editorial styling). 5) A contact section with a styled form (name, email, message) and social media icon links. 6) Smooth scroll navigation with a fixed header that changes style on scroll. The overall aesthetic should be bold and artistic — not a generic template. Use dramatic typography, creative use of whitespace, and unexpected layout choices. Use only HTML, CSS, and vanilla JavaScript. Use Google Fonts — pick distinctive, characterful fonts."
+}
