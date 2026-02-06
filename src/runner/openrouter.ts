@@ -9,7 +9,8 @@ const MAX_RETRIES = 2;
  */
 export async function callOpenRouter(
   prompt: string,
-  options: GenerateOptions
+  options: GenerateOptions,
+  signal?: AbortSignal
 ): Promise<GenerationResult> {
   const start = Date.now();
   let lastError: string | undefined;
@@ -32,6 +33,7 @@ export async function callOpenRouter(
           messages: [{ role: "user", content: prompt }],
           temperature: options.temperature ?? 0.9,
         }),
+        signal,
       });
 
       if (!response.ok) {

@@ -4,7 +4,7 @@ import { runBenchmark } from "@/runner/generate";
 import { saveRun } from "@/runner/archiver";
 import { loadPrompt, inlinePrompt } from "@/runner/prompt-loader";
 
-/** POST /api/generate — Trigger a benchmark run */
+/** POST /api/generate — Trigger a benchmark run, streamed via SSE */
 export async function POST(request: NextRequest) {
   // 1. Extract API key
   const apiKey = request.headers.get("x-openrouter-key");
@@ -83,30 +83,71 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 5. Run benchmark
-  console.log(`[generate] Starting benchmark: "${promptTitle}" | mode=${mode} | models=${models.map(m => m.id).join(", ")}`);
-  try {
-    const { run } = await runBenchmark({
-      prompt: promptText,
-      promptTitle,
-      models,
-      mode,
-      apiKey,
-    });
+  // 5. Create an AbortController that listens for client disconnect
+  const abortController = new AbortController();
+  request.signal.addEventListener("abort", () => {
+    abortController.abort();
+  });
 
-    // 6. Save to archive
-    console.log(`[generate] Benchmark complete, saving run ${run.id}...`);
-    await saveRun(run);
+  // 6. Stream SSE
+  console.log(`[generate] Starting benchmark (SSE): "${promptTitle}" | mode=${mode} | models=${models.map(m => m.id).join(", ")}`);
 
-    // 7. Return run summary (without full HTML content)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { designs: _designs, ...summary } = run;
-    console.log(`[generate] Run saved: ${run.id}`);
-    return NextResponse.json(summary);
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Unknown error during generation";
-    console.error(`[generate] Benchmark failed:`, message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (event: string, data: unknown) => {
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+          );
+        } catch {
+          // Stream may have been closed by client disconnect
+        }
+      };
+
+      try {
+        const { run } = await runBenchmark({
+          prompt: promptText,
+          promptTitle,
+          models,
+          mode,
+          apiKey,
+          signal: abortController.signal,
+          onProgress: (update) => {
+            send("progress", update);
+          },
+        });
+
+        // Save to archive
+        console.log(`[generate] Benchmark complete, saving run ${run.id}...`);
+        await saveRun(run);
+
+        // Send summary (without full HTML content)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { designs: _designs, ...summary } = run;
+        send("complete", summary);
+        console.log(`[generate] Run saved: ${run.id}`);
+      } catch (err) {
+        if (abortController.signal.aborted) {
+          send("error", { error: "Generation cancelled" });
+          console.log("[generate] Benchmark cancelled by client");
+        } else {
+          const message =
+            err instanceof Error ? err.message : "Unknown error during generation";
+          send("error", { error: message });
+          console.error(`[generate] Benchmark failed:`, message);
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

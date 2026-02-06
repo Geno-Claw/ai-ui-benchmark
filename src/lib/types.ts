@@ -10,6 +10,7 @@ export interface GenerateOptions {
   mode: "raw" | "skill";
   temperature?: number;
   apiKey: string;
+  signal?: AbortSignal;
 }
 
 export interface GenerationResult {

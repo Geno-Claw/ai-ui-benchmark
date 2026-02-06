@@ -13,6 +13,7 @@ export interface BenchmarkOptions {
   apiKey: string;
   variantsPerModel?: number;
   onProgress?: (update: ProgressUpdate) => void;
+  signal?: AbortSignal;
 }
 
 export interface ProgressUpdate {
@@ -21,6 +22,10 @@ export interface ProgressUpdate {
   status: "generating" | "complete" | "error";
   total: number;
   completed: number;
+  cost?: number;
+  durationMs?: number;
+  tokens?: { input: number; output: number };
+  error?: string;
 }
 
 export interface BenchmarkResult {
@@ -116,6 +121,7 @@ export async function runBenchmark(
     apiKey,
     variantsPerModel = 5,
     onProgress,
+    signal,
   } = options;
 
   const runId = await generateRunId(promptTitle, mode);
@@ -131,6 +137,12 @@ export async function runBenchmark(
       console.log(`[runner] ${model.id}: starting ${variantsPerModel} variants...`);
 
       for (let v = 0; v < variantsPerModel; v++) {
+        // Check for abort before each variant
+        if (signal?.aborted) {
+          console.log(`[runner] ${model.id}: aborted before variant ${v + 1}`);
+          break;
+        }
+
         const variantNum = v + 1;
         const temperature = VARIANT_TEMPERATURES[v] ?? 1.0;
 
@@ -155,7 +167,7 @@ export async function runBenchmark(
           apiKey,
         };
 
-        const result = await callOpenRouter(fullPrompt, genOptions);
+        const result = await callOpenRouter(fullPrompt, genOptions, signal);
         variants.push(result);
         completed++;
 
@@ -165,13 +177,17 @@ export async function runBenchmark(
           console.log(`[runner] ${model.id} variant ${variantNum}: done (${result.durationMs}ms, ${result.tokens.output} tokens)`);
         }
 
-        // Report completion
+        // Report completion with cost/duration/tokens
         onProgress?.({
           model: model.id,
           variant: variantNum,
           status: result.error ? "error" : "complete",
           total,
           completed,
+          cost: result.cost,
+          durationMs: result.durationMs,
+          tokens: result.tokens,
+          error: result.error,
         });
       }
 

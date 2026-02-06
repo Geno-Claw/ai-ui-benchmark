@@ -98,6 +98,21 @@
 - [x] **Responsive** — desktop-first with tablet-friendly layout
 - [x] **No external UI library** — pure Tailwind CSS + inline SVG icons
 
+### SSE Generation Progress (v0.5.0)
+- [x] **Server-Sent Events (SSE)** — `/api/generate` streams progress events instead of blocking until done
+- [x] **Real-time progress bar** — shows current/total with percentage during generation
+- [x] **Per-model status tracking** — individual model progress with checkmarks, spinners, and error indicators
+- [x] **Live cost tracking** — running cost tally accumulated from OpenRouter response data
+- [x] **Estimated time remaining** — extrapolated ETA based on average variant generation time (after 2+ completions)
+- [x] **Enhanced ProgressUpdate** — includes `cost`, `durationMs`, `tokens`, and `error` fields from each generation
+- [x] **Cancel support** — AbortController-based cancellation from client to server
+  - Cancel button (red) appears during active generation
+  - Client abort signal propagated to API route → runner → OpenRouter fetch calls
+  - Graceful cleanup on cancellation
+- [x] **Abort signal propagation** — `AbortSignal` passed through `BenchmarkOptions` → `callOpenRouter()` → `fetch()`
+- [x] **SSE event types**: `progress` (per-variant updates), `complete` (run summary), `error` (failure details)
+- [x] **Client disconnect detection** — server listens for `request.signal` abort to stop generation
+
 ## Planned
 
 ### Future Enhancements
@@ -106,5 +121,5 @@
 - [ ] Responsive preview controls (mobile/tablet/desktop viewport widths)
 - [ ] Export run as zip download
 - [ ] URL-based deep linking to specific run/model/variant
-- [ ] Real-time progress via SSE during generation
+- [x] Real-time progress via SSE during generation
 - [ ] Additional model support as available on OpenRouter
