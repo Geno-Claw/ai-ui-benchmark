@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { PromptConfig, ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
 
@@ -85,14 +85,19 @@ export default function GeneratePanel({
   const anySelectedSupportsReasoning = selectedReasoningModels.length > 0;
 
   // Compute the union of all effort levels across selected models
-  const availableEfforts: ReasoningEffort[] = anySelectedSupportsReasoning
-    ? Array.from(
-        new Set(selectedReasoningModels.flatMap((m) => m.reasoningEfforts ?? []))
-      ).sort((a, b) => {
-        const order: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
-        return order.indexOf(a) - order.indexOf(b);
-      })
-    : ["none"];
+  const availableEfforts: ReasoningEffort[] = useMemo(
+    () =>
+      anySelectedSupportsReasoning
+        ? Array.from(
+            new Set(selectedReasoningModels.flatMap((m) => m.reasoningEfforts ?? []))
+          ).sort((a, b) => {
+            const order: ReasoningEffort[] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
+            return order.indexOf(a) - order.indexOf(b);
+          })
+        : ["none"],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [anySelectedSupportsReasoning, selectedModels]
+  );
 
   // Load prompts from API
   useEffect(() => {

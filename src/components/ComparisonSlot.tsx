@@ -40,6 +40,7 @@ export default function ComparisonSlot({
   const [currentVariant, setCurrentVariant] = useState(0);
   const [showSource, setShowSource] = useState(false);
   const [zoom, setZoom] = useState(1.0);
+  const [jsEnabled, setJsEnabled] = useState(false);
 
   const result = results[currentVariant];
 
@@ -105,6 +106,20 @@ export default function ComparisonSlot({
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          {/* JS toggle */}
+          {!showSource && (
+            <button
+              onClick={() => setJsEnabled(!jsEnabled)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors mr-1 ${
+                jsEnabled
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                  : "bg-gray-800 text-gray-500 hover:text-gray-300 hover:bg-gray-700"
+              }`}
+              title={jsEnabled ? "JavaScript is running — click to disable" : "Enable JavaScript execution"}
+            >
+              {jsEnabled ? "⏹ JS Active" : "▶ Run JS"}
+            </button>
+          )}
           {/* Zoom controls */}
           {!showSource && (
             <div className="flex items-center gap-0.5 mr-2">
@@ -191,9 +206,9 @@ export default function ComparisonSlot({
               }}
             >
               <iframe
-                sandbox="allow-scripts"
+                sandbox={jsEnabled ? "allow-scripts" : ""}
                 srcDoc={result.html}
-                className="w-full h-full border-0"
+                className={`w-full h-full border-0 ${jsEnabled ? "ring-2 ring-amber-500/50" : ""}`}
                 title={`${modelName} - Variant ${currentVariant + 1}`}
               />
             </div>
