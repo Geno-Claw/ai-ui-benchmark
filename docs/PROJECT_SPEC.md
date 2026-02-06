@@ -261,10 +261,36 @@ interface AppState {
 ### API Routes (Next.js)
 
 ```
-GET /api/runs                    → List archived runs (from index.json)
-GET /api/runs/[runId]            → Get full run data + design metadata
-GET /api/runs/[runId]/[model]/[variant]  → Serve the HTML file
-DELETE /api/runs/[runId]         → Delete a run
+GET  /api/runs                              → List archived runs (from index.json)
+GET  /api/runs/[runId]                      → Get full run data + design metadata
+GET  /api/runs/[runId]/[model]/[variant]    → Serve the HTML file
+DELETE /api/runs/[runId]                    → Delete a run
+POST /api/generate                          → Trigger a benchmark run
+POST /api/test-key                          → Validate an API key works
+```
+
+### API Key Flow (UI → Server)
+
+```
+Browser (localStorage)
+  │
+  ├─ User enters key in Settings page
+  ├─ Key stored in localStorage (never leaves browser except via API call)
+  │
+  └─ On generate request:
+       POST /api/generate
+       Headers: {
+         x-anthropic-key: <from localStorage>,
+         x-openai-key: <from localStorage>,
+         x-google-key: <from localStorage>
+       }
+       Body: { prompt, models, mode }
+       │
+       └─ Server-side: extracts keys from headers,
+          makes API calls to model providers,
+          saves outputs to archive/,
+          returns results.
+          Keys are NEVER persisted server-side.
 ```
 
 ---
@@ -280,6 +306,57 @@ DELETE /api/runs/[runId]         → Delete a run
 | **AI SDKs** | @anthropic-ai/sdk, openai, @google/generative-ai | Official SDKs for each provider |
 | **Storage** | File system (JSON + HTML) | Simple, portable, no database needed |
 | **Package Manager** | npm | Standard |
+
+---
+
+## Security
+
+### API Key Management
+
+API keys are **never** stored in code, config files, or committed to the repo. Two storage methods:
+
+**1. Browser Configuration (Primary — for the UI)**
+- Settings page in the UI where users enter their API keys
+- Keys stored in **browser localStorage** — never sent to the server or saved to disk
+- Keys passed to API routes via request headers (over localhost only)
+- Clear/reset button to wipe stored keys
+- Visual indicator showing which models are configured vs missing keys
+
+**2. Environment Variables (Fallback — for CLI runner)**
+- `.env` file (gitignored) for headless CLI usage
+- `.env.example` committed with placeholder values and instructions
+- Runner checks env vars: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_AI_API_KEY`
+
+**Priority**: UI localStorage keys take precedence when running via the web UI. Env vars used as fallback and for CLI-only usage.
+
+### Security Rules
+
+| Rule | Detail |
+|---|---|
+| **No keys in code** | All API keys via localStorage or env vars only |
+| **`.env` gitignored** | `.gitignore` includes `.env`, `.env.local`, `.env.*.local` |
+| **`.env.example` committed** | Template with placeholder values, no real keys |
+| **No keys in metadata** | `meta.json` files never contain API keys |
+| **No keys in logs** | CLI output redacts any key-like strings |
+| **Localhost only** | API routes only accessible on localhost (Next.js dev server) |
+| **Iframe sandboxing** | Generated HTML rendered in sandboxed iframes — cannot access parent page or localStorage |
+| **No external transmission** | Keys never leave the local machine — all API calls made server-side |
+
+### Settings UI
+
+```
+Settings Page
+├── API Keys
+│   ├── Anthropic API Key    [••••••••••] [Show] [Clear]
+│   ├── OpenAI API Key       [••••••••••] [Show] [Clear]
+│   └── Google AI API Key    [••••••••••] [Show] [Clear]
+├── Status
+│   ├── ✅ Claude Opus 4.6      Ready
+│   ├── ✅ Claude Sonnet 4.5    Ready
+│   ├── ❌ GPT-5.2              No API key
+│   └── ❌ Gemini 2.5 Pro       No API key
+└── [Test Connection] [Clear All Keys]
+```
 
 ---
 
