@@ -113,6 +113,13 @@
 - [x] **SSE event types**: `progress` (per-variant updates), `complete` (run summary), `error` (failure details)
 - [x] **Client disconnect detection** — server listens for `request.signal` abort to stop generation
 
+### Page Refresh Protection (v0.5.1)
+- [x] **Interrupted generation detection** — active generation job params persisted to IndexedDB (`active-job` store); on page reload, detects interrupted runs automatically
+- [x] **Resume generation** — pick up where you left off after accidental page refresh; backend accepts `skipVariants` and `resumeRunId` to skip already-completed variants and reuse the same run ID
+- [x] **Resume banner UI** — amber notification banner shown on page load when an interrupted job is detected, with Resume and Discard buttons
+- [x] **Incremental progress tracking** — `completedVariants` per model updated in IndexedDB on each variant completion so resume knows exactly where to continue
+- [x] **beforeunload warning** — browser's native "Leave site?" confirmation dialog shown when generation is active, preventing accidental navigation
+
 ## Planned
 
 ### Expanded Model Support (v0.6.0)

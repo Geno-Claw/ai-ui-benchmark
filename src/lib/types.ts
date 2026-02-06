@@ -51,6 +51,21 @@ export interface PromptConfig {
   prompt: string;
 }
 
+export interface ActiveJob {
+  id: string; // Same as runId
+  params: {
+    prompt?: string;
+    promptId?: string;
+    models: string[];
+    mode: "raw" | "skill";
+    modelEfforts?: Record<string, string>;
+  };
+  startedAt: string; // ISO timestamp
+  completedVariants: Record<string, number>; // modelId -> count of completed variants
+  totalVariants: number;
+  status: "active" | "interrupted";
+}
+
 export interface AppState {
   currentRunId: string | null;
   layoutMode: "gallery" | "sideBySide" | "fullscreen";

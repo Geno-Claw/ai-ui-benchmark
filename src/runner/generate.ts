@@ -24,6 +24,10 @@ export interface BenchmarkOptions {
   signal?: AbortSignal;
   /** Per-model reasoning effort map (modelId → effort level) */
   modelEfforts?: Record<string, string>;
+  /** Resume: reuse this runId instead of generating a new one */
+  resumeRunId?: string;
+  /** Resume: skip N already-completed variants per model (modelId → count) */
+  skipVariants?: Record<string, number>;
 }
 
 export interface ProgressUpdate {
@@ -122,13 +126,25 @@ export async function runBenchmark(
     onInit,
     signal,
     modelEfforts,
+    resumeRunId,
+    skipVariants,
   } = options;
 
-  const runId = generateRunId(promptTitle, mode);
-  const total = models.length * variantsPerModel;
+  const runId = resumeRunId || generateRunId(promptTitle, mode);
+  const totalAll = models.length * variantsPerModel;
+
+  // Calculate how many variants we're skipping (for resume)
+  const skipTotal = skipVariants
+    ? Object.values(skipVariants).reduce((a, b) => a + b, 0)
+    : 0;
+  const remainingTotal = totalAll - skipTotal;
   let completed = 0;
 
-  console.log(`[runner] Run ${runId}: ${total} total variants (${models.length} models × ${variantsPerModel} variants)`);
+  if (resumeRunId) {
+    console.log(`[runner] Resuming run ${runId}: ${remainingTotal} remaining variants (skipping ${skipTotal})`);
+  } else {
+    console.log(`[runner] Run ${runId}: ${totalAll} total variants (${models.length} models × ${variantsPerModel} variants)`);
+  }
 
   // Notify caller with run metadata before any generation starts
   onInit?.({
@@ -138,14 +154,21 @@ export async function runBenchmark(
     models: models.map((m) => m.id),
     mode,
     date: new Date().toISOString(),
-    totalVariants: total,
+    totalVariants: remainingTotal,
   });
 
   // Generate for all models in parallel, variants sequential within each
   const modelResults = await Promise.all(
     models.map(async (model) => {
       const variants: GenerationResult[] = [];
-      console.log(`[runner] ${model.id}: starting ${variantsPerModel} variants...`);
+      const skip = skipVariants?.[model.id] ?? 0;
+      const startFrom = skip;
+
+      if (skip > 0) {
+        console.log(`[runner] ${model.id}: skipping ${skip} already-completed variants, starting from variant ${startFrom + 1}`);
+      } else {
+        console.log(`[runner] ${model.id}: starting ${variantsPerModel} variants...`);
+      }
 
       // Look up per-model reasoning effort
       const effortStr = modelEfforts?.[model.id];
@@ -155,7 +178,7 @@ export async function runBenchmark(
           ? (effortStr as ReasoningEffort)
           : undefined;
 
-      for (let v = 0; v < variantsPerModel; v++) {
+      for (let v = startFrom; v < variantsPerModel; v++) {
         // Check for abort before each variant
         if (signal?.aborted) {
           console.log(`[runner] ${model.id}: aborted before variant ${v + 1}`);
@@ -173,7 +196,7 @@ export async function runBenchmark(
           model: model.id,
           variant: variantNum,
           status: "generating",
-          total,
+          total: remainingTotal,
           completed,
         });
 
@@ -204,7 +227,7 @@ export async function runBenchmark(
           model: model.id,
           variant: variantNum,
           status: result.error ? "error" : "complete",
-          total,
+          total: remainingTotal,
           completed,
           cost: result.cost,
           durationMs: result.durationMs,
@@ -231,7 +254,7 @@ export async function runBenchmark(
     models: models.map((m) => m.id),
     mode,
     date: new Date().toISOString(),
-    totalVariants: total,
+    totalVariants: totalAll,
     designs,
   };
 

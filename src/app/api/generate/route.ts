@@ -22,12 +22,16 @@ export async function POST(request: NextRequest) {
     models: modelIds,
     mode,
     modelEfforts,
+    resumeRunId,
+    skipVariants,
   } = body as {
     prompt?: string;
     promptId?: string;
     models: string[];
     mode: "raw" | "skill";
     modelEfforts?: Record<string, string>;
+    resumeRunId?: string;
+    skipVariants?: Record<string, number>;
   };
 
   // Validate required fields
@@ -124,6 +128,8 @@ export async function POST(request: NextRequest) {
           mode,
           apiKey,
           modelEfforts: validatedEfforts,
+          resumeRunId,
+          skipVariants,
           signal: abortController.signal,
           onInit: (metadata) => {
             send("init", metadata);
