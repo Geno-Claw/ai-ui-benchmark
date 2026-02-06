@@ -39,12 +39,19 @@
 - [x] `loadRun` — reconstruct full run with HTML content from archive
 - [x] `deleteRun` — remove run directory and update index
 
-### Prompt Bank (v0.2.0)
+### Prompt Bank (v0.2.0, expanded v0.4.0)
 - [x] File-based prompt storage: `prompts/<id>.json`
 - [x] `loadPrompt` — load a single prompt by ID
 - [x] `listPrompts` — list all available prompts
 - [x] Inline prompt support for ad-hoc custom prompts
-- [x] 4 curated prompts: SaaS Landing Page, Analytics Dashboard, Multi-Step Signup Form, Creative Portfolio
+- [x] 12 curated prompts across 5 categories:
+  - **Landing Pages** (3): SaaS Landing Page, Creative Portfolio, Creative Agency Landing
+  - **Dashboards** (2): Analytics Dashboard, Server Monitoring Dashboard
+  - **Forms & Inputs** (3): Multi-Step Signup Form, E-Commerce Checkout, User Settings Page
+  - **Components** (2): Interactive Data Table, App Navigation Sidebar
+  - **Full Apps** (2): Todo Application, Chat Interface
+- [x] Category filtering in Generate panel — filter prompts by category with pill/tab UI
+- [x] Dynamic category extraction from loaded prompts with per-category counts
 
 ### API Routes (v0.2.0)
 - [x] `POST /api/generate` — trigger a benchmark run (API key via header, prompt + models + mode in body)

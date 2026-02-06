@@ -1,0 +1,7 @@
+{
+  "id": "navigation-sidebar",
+  "title": "App Navigation Sidebar",
+  "category": "Components",
+  "description": "An app navigation sidebar with collapsible sections, search, user menu, and notification badges",
+  "prompt": "Create a complete application layout featuring a rich navigation sidebar and a main content area. The sidebar should include: a logo/brand area at the top, a search input with a keyboard shortcut hint (⌘K), a primary navigation section with icons and labels for Dashboard, Projects, Team Members, Messages (with an unread count badge showing '12'), Calendar, and Documents. Add collapsible section groups — a 'Projects' group that expands to show 4-5 project names with colored dot indicators, and a 'Teams' group with team names and member count badges. Include a notification bell icon with a red badge in the sidebar header area. At the bottom, show a user profile area with avatar, name, role, and a dropdown menu triggered by clicking that shows Profile, Settings, Sign Out options. The sidebar should have a collapse/expand toggle button that shrinks it to icon-only mode with tooltips. The main content area should show a simple placeholder dashboard. Use smooth expand/collapse animations, hover highlights on all interactive items, and an active state indicator (colored left border or background) on the current page. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "todo-app",
+  "title": "Todo Application",
+  "category": "Full Apps",
+  "description": "A full-featured todo app with categories, priorities, due dates, drag-to-reorder, and dark/light mode",
+  "prompt": "Create a complete, functional todo application. Include a header with the app name, a task count summary (e.g., '3 of 12 tasks remaining'), and a dark/light mode toggle button that switches the entire UI theme. Add a task input area with a text field, a priority selector (Low/Medium/High with colored indicators), a due date picker, a category dropdown (Work, Personal, Health, Learning), and an Add Task button. Display tasks in a list where each task shows a completion checkbox, task text, priority badge, category tag, due date (highlighted in red if overdue), and Delete/Edit icon buttons. Implement inline editing when clicking Edit — the task text becomes an editable field with Save/Cancel. Add filter tabs above the list for All, Active, Completed, and a sort dropdown for sorting by date added, due date, or priority. Include a sidebar or section showing task categories with counts and colored indicators, allowing users to filter by clicking a category. Add smooth animations for task completion (strikethrough with fade), task addition (slide-in), and task deletion (slide-out). Populate with 8-10 sample tasks across different categories and states. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

@@ -26,6 +26,7 @@ export default function GeneratePanel({
   const [prompts, setPrompts] = useState<PromptConfig[]>([]);
   const [selectedPromptId, setSelectedPromptId] = useState<string>("custom");
   const [customPrompt, setCustomPrompt] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedModels, setSelectedModels] = useState<Set<string>>(
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
@@ -46,6 +47,17 @@ export default function GeneratePanel({
         .catch(() => setPrompts([]));
     }
   }, [isOpen]);
+
+  // Extract categories dynamically from loaded prompts
+  const categories = Array.from(new Set(prompts.map((p) => p.category)));
+  const categoryCounts: Record<string, number> = { All: prompts.length };
+  for (const cat of categories) {
+    categoryCounts[cat] = prompts.filter((p) => p.category === cat).length;
+  }
+  const filteredPrompts =
+    selectedCategory === "All"
+      ? prompts
+      : prompts.filter((p) => p.category === selectedCategory);
 
   const toggleModel = (modelId: string) => {
     setSelectedModels((prev) => {
@@ -184,13 +196,54 @@ export default function GeneratePanel({
             <label className="block text-sm font-medium text-gray-300">
               Prompt
             </label>
+
+            {/* Category filter pills */}
+            {prompts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {["All", ...categories].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setSelectedCategory(cat);
+                      // Reset to custom if current selection is filtered out
+                      if (
+                        cat !== "All" &&
+                        selectedPromptId !== "custom" &&
+                        !prompts.find(
+                          (p) => p.id === selectedPromptId && p.category === cat
+                        )
+                      ) {
+                        setSelectedPromptId("custom");
+                      }
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      selectedCategory === cat
+                        ? "bg-blue-600/20 text-blue-300 border border-blue-500/40"
+                        : "bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-gray-300"
+                    }`}
+                  >
+                    {cat}
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                        selectedCategory === cat
+                          ? "bg-blue-500/20 text-blue-300"
+                          : "bg-gray-700 text-gray-500"
+                      }`}
+                    >
+                      {categoryCounts[cat] ?? 0}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <select
               value={selectedPromptId}
               onChange={(e) => setSelectedPromptId(e.target.value)}
               className="w-full bg-gray-800 text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-gray-700 focus:border-blue-500 focus:outline-none"
             >
               <option value="custom">Custom prompt…</option>
-              {prompts.map((p) => (
+              {filteredPrompts.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title} — {p.category}
                 </option>

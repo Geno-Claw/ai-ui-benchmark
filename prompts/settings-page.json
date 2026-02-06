@@ -1,0 +1,7 @@
+{
+  "id": "settings-page",
+  "title": "User Settings Page",
+  "category": "Forms & Inputs",
+  "description": "A user settings page with profile, notifications, security, and billing sections organized in tabs",
+  "prompt": "Create a complete user settings page with a vertical tab navigation on the left and content area on the right. Include four sections: 1) Profile — avatar upload area with a circular placeholder and 'Change Photo' button, text inputs for full name, email, username, bio textarea, and a Save Changes button. 2) Notifications — toggle switches for Email Notifications, Push Notifications, SMS Alerts, Weekly Digest, and Marketing Emails, organized with section headers and descriptions for each toggle. 3) Security — current password, new password, and confirm password fields with a strength indicator bar, plus a Two-Factor Authentication toggle with setup instructions, and an active sessions list showing device, location, and a Revoke button. 4) Billing — current plan card (Pro Plan, $29/mo) with an Upgrade button, payment method showing a masked card number with Edit/Remove links, and a billing history table with date, description, amount, and download invoice link. Include a subtle unsaved-changes indicator and responsive layout that collapses the tab nav into a dropdown on mobile. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

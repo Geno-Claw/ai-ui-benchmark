@@ -1,0 +1,7 @@
+{
+  "id": "checkout-flow",
+  "title": "E-Commerce Checkout",
+  "category": "Forms & Inputs",
+  "description": "An e-commerce checkout flow with cart summary, shipping, payment, and order confirmation steps",
+  "prompt": "Create a complete e-commerce checkout page with a multi-step flow. Include a step indicator at the top showing the current progress through 4 steps: Cart Review, Shipping, Payment, and Confirmation. The Cart Review step should display 2-3 items with product thumbnails, names, quantities (with +/- controls), individual prices, and a running total with subtotal, shipping estimate, tax, and order total. The Shipping step should have a form with name, address line 1, address line 2, city, state, zip, and country dropdown, plus shipping method radio buttons (Standard, Express, Overnight) with prices and delivery estimates. The Payment step should show credit card inputs with a card number field that formats as you type, expiry date, CVV, and a billing-same-as-shipping checkbox. The Confirmation step should display an order summary with a success animation. Include Previous/Continue navigation buttons, real-time form validation with inline error messages, and a persistent order summary sidebar on desktop. Use a clean, trustworthy design with a white background and blue accents. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}

@@ -1,0 +1,7 @@
+{
+  "id": "monitoring-dashboard",
+  "title": "Server Monitoring Dashboard",
+  "category": "Dashboards",
+  "description": "A server and infrastructure monitoring dashboard with real-time metrics, status indicators, and alerts panel",
+  "prompt": "Create a complete server monitoring dashboard for infrastructure management. Include a top status bar showing overall system health (Healthy/Warning/Critical) with a colored indicator and last-updated timestamp. Add a row of metric cards for CPU Usage, Memory Usage, Disk I/O, and Network Throughput — each with a circular or bar progress indicator, current value, and threshold warning. Include a main section with a real-time-style line chart showing server response times over the past hour with simulated data points. Add a server list panel on the left displaying 6-8 servers with hostname, IP address, status dot (green/yellow/red), uptime percentage, and a mini load sparkline. Include an alerts panel on the right showing recent alerts with severity badges (critical, warning, info), timestamps, and alert messages. Add a dark sidebar navigation with icons for Overview, Servers, Alerts, Logs, and Settings. Use a dark theme with green/amber/red status colors. Include subtle pulse animations on active status indicators and smooth transitions on hover. Create a complete, self-contained HTML page with inline CSS and JavaScript."
+}
