@@ -122,14 +122,19 @@ export async function runBenchmark(
   const total = models.length * variantsPerModel;
   let completed = 0;
 
+  console.log(`[runner] Run ${runId}: ${total} total variants (${models.length} models × ${variantsPerModel} variants)`);
+
   // Generate for all models in parallel, variants sequential within each
   const modelResults = await Promise.all(
     models.map(async (model) => {
       const variants: GenerationResult[] = [];
+      console.log(`[runner] ${model.id}: starting ${variantsPerModel} variants...`);
 
       for (let v = 0; v < variantsPerModel; v++) {
         const variantNum = v + 1;
         const temperature = VARIANT_TEMPERATURES[v] ?? 1.0;
+
+        console.log(`[runner] ${model.id} variant ${variantNum}/${variantsPerModel} (temp=${temperature}) — generating...`);
 
         // Report generating
         onProgress?.({
@@ -154,6 +159,12 @@ export async function runBenchmark(
         variants.push(result);
         completed++;
 
+        if (result.error) {
+          console.error(`[runner] ${model.id} variant ${variantNum}: ERROR — ${result.error}`);
+        } else {
+          console.log(`[runner] ${model.id} variant ${variantNum}: done (${result.durationMs}ms, ${result.tokens.output} tokens)`);
+        }
+
         // Report completion
         onProgress?.({
           model: model.id,
@@ -164,6 +175,7 @@ export async function runBenchmark(
         });
       }
 
+      console.log(`[runner] ${model.id}: all variants complete`);
       return { modelId: model.id, variants };
     })
   );

@@ -383,7 +383,7 @@ export default function GeneratePanel({
                 <div className="w-full bg-gray-800 rounded-full h-1.5">
                   <div
                     className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: "100%" }}
+                    style={{ width: `${Math.max(5, (progress.current / progress.total) * 100)}%` }}
                   />
                 </div>
               )}

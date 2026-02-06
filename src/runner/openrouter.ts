@@ -15,6 +15,9 @@ export async function callOpenRouter(
   let lastError: string | undefined;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      console.log(`[openrouter] ${options.model.id}: retry ${attempt}/${MAX_RETRIES}...`);
+    }
     try {
       const response = await fetch(OPENROUTER_URL, {
         method: "POST",
@@ -33,6 +36,7 @@ export async function callOpenRouter(
 
       if (!response.ok) {
         const errorBody = await response.text();
+        console.error(`[openrouter] ${options.model.id}: HTTP ${response.status} — ${errorBody.slice(0, 200)}`);
         throw new Error(
           `OpenRouter API error ${response.status}: ${errorBody}`
         );

@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Run benchmark
+  console.log(`[generate] Starting benchmark: "${promptTitle}" | mode=${mode} | models=${models.map(m => m.id).join(", ")}`);
   try {
     const { run } = await runBenchmark({
       prompt: promptText,
@@ -94,15 +95,18 @@ export async function POST(request: NextRequest) {
     });
 
     // 6. Save to archive
+    console.log(`[generate] Benchmark complete, saving run ${run.id}...`);
     await saveRun(run);
 
     // 7. Return run summary (without full HTML content)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { designs: _designs, ...summary } = run;
+    console.log(`[generate] Run saved: ${run.id}`);
     return NextResponse.json(summary);
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Unknown error during generation";
+    console.error(`[generate] Benchmark failed:`, message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
