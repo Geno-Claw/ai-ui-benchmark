@@ -69,17 +69,17 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose} />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md z-50 bg-gray-900 border-l border-gray-800 shadow-2xl overflow-auto">
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md z-50 backdrop-blur-xl bg-[#0a0a1a]/90 border-l border-white/[0.08] shadow-2xl overflow-auto">
         <div className="p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Settings</h2>
+            <h2 className="text-lg font-semibold text-white font-[family-name:var(--font-sora)]">Settings</h2>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -105,11 +105,11 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                     setTestStatus("idle");
                   }}
                   placeholder="sk-or-v1-..."
-                  className="w-full bg-gray-800 text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-20"
+                  className="w-full backdrop-blur-sm bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-white/[0.08] focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30 pr-20"
                 />
                 <button
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-200 px-2 py-1 rounded transition-colors"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-200 px-2 py-1 rounded transition-all"
                 >
                   {showKey ? "Hide" : "Show"}
                 </button>
@@ -118,12 +118,12 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
 
             {/* Status indicator */}
             {testStatus !== "idle" && (
-              <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
+              <div className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg backdrop-blur-sm border ${
                 testStatus === "testing"
-                  ? "bg-blue-500/10 text-blue-400"
+                  ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                   : testStatus === "valid"
-                    ? "bg-green-500/10 text-green-400"
-                    : "bg-red-500/10 text-red-400"
+                    ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+                    : "bg-red-500/10 text-red-400 border-red-500/20"
               }`}>
                 {testStatus === "testing" && (
                   <>
@@ -131,7 +131,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Testing connection…
+                    Testing connection...
                   </>
                 )}
                 {testStatus === "valid" && (
@@ -139,7 +139,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Connected — API key is valid
+                    Connected -- API key is valid
                   </>
                 )}
                 {testStatus === "invalid" && (
@@ -158,20 +158,20 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
               <button
                 onClick={handleTest}
                 disabled={!apiKey.trim() || testStatus === "testing"}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-purple-500/20"
               >
                 Test Connection
               </button>
               <button
                 onClick={handleSave}
                 disabled={!apiKey.trim()}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium backdrop-blur-sm bg-white/[0.06] border border-white/[0.08] text-gray-200 hover:bg-white/[0.1] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Save
               </button>
               <button
                 onClick={handleClear}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-800 text-red-400 hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium backdrop-blur-sm bg-white/[0.04] border border-white/[0.06] text-red-400 hover:bg-red-500/10 hover:border-red-500/20 transition-all"
               >
                 Clear
               </button>
@@ -179,23 +179,23 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
           </div>
 
           {/* Info */}
-          <div className="border-t border-gray-800 pt-4 space-y-3">
+          <div className="border-t border-white/[0.06] pt-4 space-y-3">
             <h3 className="text-sm font-medium text-gray-300">About API Keys</h3>
             <ul className="text-xs text-gray-500 space-y-1.5">
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span>
+                <span className="text-teal-400 mt-0.5">+</span>
                 Stored only in your browser&apos;s localStorage
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span>
+                <span className="text-teal-400 mt-0.5">+</span>
                 Sent directly to OpenRouter from your browser
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span>
+                <span className="text-teal-400 mt-0.5">+</span>
                 Never saved to disk or logged server-side
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-400 mt-0.5">✓</span>
+                <span className="text-teal-400 mt-0.5">+</span>
                 One key gives access to all supported models
               </li>
             </ul>
@@ -205,7 +205,7 @@ export default function Settings({ isOpen, onClose }: SettingsProps) {
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
+                className="text-purple-400 hover:text-purple-300 underline"
               >
                 openrouter.ai/keys
               </a>

@@ -24,8 +24,8 @@ export default function ModelPicker({
           onClick={() => onSelect(modelId)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
             modelId === selectedModelId
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
-              : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+              ? "bg-purple-600/80 text-white shadow-lg shadow-purple-600/25 border border-purple-500/40"
+              : "backdrop-blur-sm bg-white/[0.04] text-gray-400 hover:bg-white/[0.08] hover:text-gray-200 border border-white/[0.06]"
           }`}
         >
           {modelNames[modelId] || modelId}

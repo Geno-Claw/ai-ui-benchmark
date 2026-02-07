@@ -148,7 +148,7 @@ export default function Home() {
     return (
       <>
         <div
-          className="fixed inset-0 bg-black/70 z-40"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
           onClick={() => setFullscreen(null)}
         />
         <div className="fixed inset-4 z-50">
@@ -172,16 +172,16 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-6 py-3 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-30">
+      <header className="flex items-center justify-between px-6 py-3 border-b border-white/[0.08] backdrop-blur-xl bg-white/[0.03] sticky top-0 z-30">
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-teal-500 flex items-center justify-center shadow-lg glow-purple-subtle">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h1 className="text-lg font-bold text-white hidden sm:block">AI UI Benchmark</h1>
+            <h1 className="text-lg font-bold text-white hidden sm:block font-[family-name:var(--font-sora)]">AI UI Benchmark</h1>
           </div>
 
           {/* Run Selector */}
@@ -205,7 +205,7 @@ export default function Home() {
           {/* New Benchmark Button */}
           <button
             onClick={() => setGenerateOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 transition-all hover:shadow-lg hover:shadow-purple-500/25"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -216,7 +216,7 @@ export default function Home() {
           {/* Settings Button */}
           <button
             onClick={() => setSettingsOpen(true)}
-            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-all"
             title="Settings"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,7 +231,7 @@ export default function Home() {
       <main className="flex-1">
         {/* Resume banner for interrupted generation */}
         {resumableJob && (
-          <div className="mx-4 mt-4 rounded-lg border border-amber-500/40 bg-amber-950/50 px-5 py-4">
+          <div className="mx-4 mt-4 rounded-xl border border-amber-500/30 backdrop-blur-xl bg-amber-950/30 px-5 py-4">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex-shrink-0 rounded-full bg-amber-500/20 p-1.5">
                 <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -250,7 +250,7 @@ export default function Home() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={resumeGeneration}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600/80 backdrop-blur-sm px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-500/80 transition-all hover:shadow-lg hover:shadow-amber-500/20"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -260,7 +260,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={discardResumableJob}
-                  className="inline-flex items-center rounded-md bg-gray-700 px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-gray-600 transition-colors"
+                  className="inline-flex items-center rounded-lg backdrop-blur-sm bg-white/[0.06] border border-white/[0.08] px-3 py-1.5 text-sm font-medium text-gray-300 hover:bg-white/[0.1] transition-all"
                 >
                   Discard
                 </button>
@@ -272,24 +272,24 @@ export default function Home() {
         {loading ? (
           <div className="flex items-center justify-center h-96">
             <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-purple-400 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <p className="text-gray-500 text-sm">Loading runs…</p>
+              <p className="text-gray-500 text-sm">Loading runs...</p>
             </div>
           </div>
         ) : runs.length === 0 && !activeRunId ? (
           /* Empty State */
           <div className="flex items-center justify-center h-[calc(100vh-60px)]">
             <div className="max-w-lg text-center space-y-6 px-6">
-              <div className="w-16 h-16 rounded-2xl bg-gray-800 flex items-center justify-center mx-auto">
-                <svg className="w-8 h-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-16 h-16 rounded-2xl backdrop-blur-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mx-auto">
+                <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">
+                <h2 className="text-2xl font-bold text-white mb-2 font-[family-name:var(--font-sora)]">
                   No benchmarks yet
                 </h2>
                 <p className="text-gray-400">
@@ -299,7 +299,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={() => setGenerateOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 transition-all hover:shadow-lg hover:shadow-purple-500/25"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -308,7 +308,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setSettingsOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium backdrop-blur-xl bg-white/[0.06] border border-white/[0.08] text-gray-300 hover:bg-white/[0.1] transition-all"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -317,19 +317,19 @@ export default function Home() {
                 </button>
               </div>
               <div className="pt-4 grid grid-cols-2 gap-3 text-left">
-                <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+                <div className="rounded-xl border border-white/[0.08] backdrop-blur-xl bg-white/[0.04] p-4 hover:bg-white/[0.06] transition-all">
                   <h3 className="text-sm font-medium text-white mb-1">Multi-Model</h3>
-                  <p className="text-xs text-gray-500">Test Claude, GPT, Gemini — all through OpenRouter</p>
+                  <p className="text-xs text-gray-500">Test Claude, GPT, Gemini -- all through OpenRouter</p>
                 </div>
-                <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+                <div className="rounded-xl border border-white/[0.08] backdrop-blur-xl bg-white/[0.04] p-4 hover:bg-white/[0.06] transition-all">
                   <h3 className="text-sm font-medium text-white mb-1">Up to 10 Variants</h3>
                   <p className="text-xs text-gray-500">Configurable count with temperature variation</p>
                 </div>
-                <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+                <div className="rounded-xl border border-white/[0.08] backdrop-blur-xl bg-white/[0.04] p-4 hover:bg-white/[0.06] transition-all">
                   <h3 className="text-sm font-medium text-white mb-1">Live Preview</h3>
                   <p className="text-xs text-gray-500">Interactive sandboxed iframe rendering</p>
                 </div>
-                <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+                <div className="rounded-xl border border-white/[0.08] backdrop-blur-xl bg-white/[0.04] p-4 hover:bg-white/[0.06] transition-all">
                   <h3 className="text-sm font-medium text-white mb-1">Source View</h3>
                   <p className="text-xs text-gray-500">Toggle between preview and code</p>
                 </div>
@@ -339,11 +339,11 @@ export default function Home() {
         ) : runLoading && !displayRun ? (
           <div className="flex items-center justify-center h-96">
             <div className="flex flex-col items-center gap-3">
-              <svg className="w-8 h-8 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
+              <svg className="w-8 h-8 text-purple-400 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
-              <p className="text-gray-500 text-sm">Loading run data…</p>
+              <p className="text-gray-500 text-sm">Loading run data...</p>
             </div>
           </div>
         ) : displayRun ? (

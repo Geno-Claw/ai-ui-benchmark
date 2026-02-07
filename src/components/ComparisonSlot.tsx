@@ -60,9 +60,9 @@ export default function ComparisonSlot({
   const durationSec = result ? (result.durationMs / 1000).toFixed(1) : null;
 
   return (
-    <div className={`flex flex-col rounded-xl border border-gray-800 bg-gray-900 overflow-hidden ${isFullscreen ? "fixed inset-4 z-50" : "h-full"}`}>
+    <div className={`flex flex-col rounded-xl border border-white/[0.08] backdrop-blur-xl bg-white/[0.04] overflow-hidden transition-all hover:border-white/[0.12] hover:bg-white/[0.05] ${isFullscreen ? "fixed inset-4 z-50 hover:border-white/[0.08]" : "h-full"}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 bg-gray-900 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02] shrink-0">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <ModelPicker
             models={allModels}
@@ -81,7 +81,7 @@ export default function ComparisonSlot({
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-1.5 border-b border-gray-800/50 bg-gray-900/80 shrink-0">
+      <div className="flex items-center justify-between px-4 py-1.5 border-b border-white/[0.04] bg-white/[0.01] shrink-0">
         <div className="flex items-center gap-3 text-xs text-gray-500">
           {result ? (
             <>
@@ -113,7 +113,7 @@ export default function ComparisonSlot({
               )}
             </>
           ) : (
-            <span className="text-gray-600">{isGenerating ? "Waiting for results…" : "No data"}</span>
+            <span className="text-gray-600">{isGenerating ? "Waiting for results..." : "No data"}</span>
           )}
         </div>
         <div className="flex items-center gap-1.5">
@@ -121,14 +121,14 @@ export default function ComparisonSlot({
           {result && !showSource && (
             <button
               onClick={() => setJsEnabled(!jsEnabled)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors mr-1 ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-all mr-1 ${
                 jsEnabled
                   ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                  : "bg-gray-800 text-gray-500 hover:text-gray-300 hover:bg-gray-700"
+                  : "backdrop-blur-sm bg-white/[0.04] text-gray-500 hover:text-gray-300 hover:bg-white/[0.08] border border-white/[0.06]"
               }`}
-              title={jsEnabled ? "JavaScript is running — click to disable" : "Enable JavaScript execution"}
+              title={jsEnabled ? "JavaScript is running -- click to disable" : "Enable JavaScript execution"}
             >
-              {jsEnabled ? "⏹ JS Active" : "▶ Run JS"}
+              {jsEnabled ? "JS Active" : "Run JS"}
             </button>
           )}
           {/* Zoom controls */}
@@ -138,10 +138,10 @@ export default function ComparisonSlot({
                 <button
                   key={z.label}
                   onClick={() => setZoom(z.value)}
-                  className={`px-2 py-0.5 rounded text-xs transition-colors ${
+                  className={`px-2 py-0.5 rounded text-xs transition-all ${
                     zoom === z.value
-                      ? "bg-gray-700 text-white"
-                      : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+                      ? "bg-white/[0.1] text-white border border-white/[0.1]"
+                      : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]"
                   }`}
                 >
                   {z.label}
@@ -153,10 +153,10 @@ export default function ComparisonSlot({
           {result && (
             <button
               onClick={() => setShowSource(!showSource)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                 showSource
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                  ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                  : "backdrop-blur-sm bg-white/[0.04] text-gray-400 hover:bg-white/[0.08] hover:text-gray-200 border border-white/[0.06]"
               }`}
             >
               {showSource ? (
@@ -181,7 +181,7 @@ export default function ComparisonSlot({
           {isFullscreen ? (
             <button
               onClick={onCloseFullscreen}
-              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
               title="Exit fullscreen"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -191,7 +191,7 @@ export default function ComparisonSlot({
           ) : (
             <button
               onClick={() => onFullscreen?.(modelId, currentVariant)}
-              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
               title="Fullscreen"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -205,15 +205,15 @@ export default function ComparisonSlot({
       {/* Content area */}
       <div className="flex-1 min-h-0 bg-white relative">
         {!result ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900">
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#050510]">
             {isGenerating ? (
               <>
-                <svg className="w-8 h-8 text-blue-500 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
+                <svg className="w-8 h-8 text-purple-400 animate-spin mb-3" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
                 <p className="text-gray-400 text-sm font-medium">{modelName}</p>
-                <p className="text-gray-500 text-xs mt-1">Generating…</p>
+                <p className="text-gray-500 text-xs mt-1">Generating...</p>
               </>
             ) : (
               <p className="text-gray-500 text-sm">No design data available</p>

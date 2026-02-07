@@ -51,11 +51,11 @@ export default function GenerationIndicator({
       {/* Pill button with embedded progress bar */}
       <button
         onClick={onClick}
-        className="relative overflow-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-800 text-blue-300 border border-blue-500/40 hover:border-blue-400/60 transition-colors cursor-pointer"
+        className="relative overflow-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-xl bg-white/[0.05] text-purple-300 border border-purple-500/30 hover:border-purple-400/50 transition-all cursor-pointer hover:shadow-lg hover:shadow-purple-500/10"
       >
         {/* Progress fill */}
         <div
-          className="absolute inset-0 bg-blue-600/20 transition-all duration-500 ease-out"
+          className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-teal-500/20 transition-all duration-500 ease-out"
           style={{ width: `${percentage}%` }}
         />
 
@@ -78,13 +78,13 @@ export default function GenerationIndicator({
           <span>
             {progress.current}/{progress.total}
           </span>
-          <span className="text-blue-400/60 ml-0.5">{percentage}%</span>
+          <span className="text-purple-400/60 ml-0.5">{percentage}%</span>
         </span>
       </button>
 
       {/* Hover popover */}
       {hoverOpen && progress.modelStatuses && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-72 rounded-lg border border-gray-700 bg-gray-900 shadow-xl p-3 space-y-2">
+        <div className="absolute top-full left-0 mt-2 z-50 w-72 rounded-xl border border-white/[0.08] backdrop-blur-xl bg-[#0a0a1a]/90 shadow-2xl p-3 space-y-2">
           {/* Header */}
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>Model Progress</span>
@@ -108,9 +108,9 @@ export default function GenerationIndicator({
                     {/* Status icon */}
                     {done ? (
                       ms.error ? (
-                        <span className="text-red-400">⚠</span>
+                        <span className="text-red-400">!</span>
                       ) : (
-                        <span className="text-green-400">✓</span>
+                        <span className="text-teal-400">ok</span>
                       )
                     ) : ms.completed > 0 ? (
                       <svg
@@ -141,9 +141,9 @@ export default function GenerationIndicator({
                         ms.error
                           ? "text-red-400"
                           : done
-                            ? "text-green-400"
+                            ? "text-teal-400"
                             : ms.completed > 0
-                              ? "text-blue-300"
+                              ? "text-purple-300"
                               : "text-gray-500"
                       }`}
                     >
@@ -156,14 +156,14 @@ export default function GenerationIndicator({
                   </div>
 
                   {/* Mini progress bar */}
-                  <div className="w-full bg-gray-700 rounded-full h-1">
+                  <div className="w-full bg-white/[0.04] rounded-full h-1 border border-white/[0.04]">
                     <div
-                      className={`h-1 rounded-full transition-all duration-500 ${
+                      className={`h-full rounded-full transition-all duration-500 ${
                         ms.error
                           ? "bg-red-500"
                           : done
-                            ? "bg-green-500"
-                            : "bg-blue-600"
+                            ? "bg-teal-500"
+                            : "bg-gradient-to-r from-purple-600 to-blue-500"
                       }`}
                       style={{ width: `${modelPct}%` }}
                     />
@@ -175,7 +175,7 @@ export default function GenerationIndicator({
 
           {/* Footer: cost */}
           {(progress.cost ?? 0) > 0 && (
-            <div className="pt-1 border-t border-gray-700/50 text-xs text-gray-500">
+            <div className="pt-1 border-t border-white/[0.06] text-xs text-gray-500">
               Cost so far: {formatCost(progress.cost)}
             </div>
           )}

@@ -19,7 +19,7 @@ export default function VariantCarousel({
       <button
         onClick={() => onSelect(Math.max(0, currentVariant - 1))}
         disabled={currentVariant === 0}
-        className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="p-1 rounded text-gray-400 hover:text-white hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         aria-label="Previous variant"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -32,8 +32,8 @@ export default function VariantCarousel({
           onClick={() => onSelect(i)}
           className={`w-7 h-7 rounded text-xs font-medium transition-all ${
             i === currentVariant
-              ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
-              : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+              ? "bg-purple-600/80 text-white shadow-lg shadow-purple-600/25 border border-purple-500/40"
+              : "backdrop-blur-sm bg-white/[0.04] text-gray-400 hover:bg-white/[0.08] hover:text-gray-200 border border-white/[0.06]"
           }`}
           aria-label={`Variant ${i + 1}`}
         >
@@ -43,7 +43,7 @@ export default function VariantCarousel({
       <button
         onClick={() => onSelect(Math.min(totalVariants - 1, currentVariant + 1))}
         disabled={currentVariant === totalVariants - 1}
-        className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="p-1 rounded text-gray-400 hover:text-white hover:bg-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
         aria-label="Next variant"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
