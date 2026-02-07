@@ -24,9 +24,23 @@ export default function RunSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
   const [modelFilter, setModelFilter] = useState<string | null>(null);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentRun = runs.find((r) => r.id === currentRunId);
+
+  // Close model dropdown on click outside
+  useEffect(() => {
+    if (!modelDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [modelDropdownOpen]);
 
   // Collect all unique models across runs
   const allModels = useMemo(() => {
@@ -190,22 +204,45 @@ export default function RunSelector({
 
                 {/* Model Filter Dropdown */}
                 {allModels.length > 0 && (
-                  <select
-                    value={modelFilter ?? ""}
-                    onChange={(e) => setModelFilter(e.target.value || null)}
-                    className="backdrop-blur-sm bg-white/[0.04] text-xs text-gray-400 rounded-full px-2 py-0.5 border border-white/[0.08] focus:border-purple-500/50 focus:outline-none hover:border-white/[0.12] cursor-pointer appearance-none pr-5"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                      backgroundPosition: "right 4px center",
-                      backgroundRepeat: "no-repeat",
-                      backgroundSize: "14px",
-                    }}
-                  >
-                    <option value="">Any model</option>
-                    {allModels.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                  <div ref={modelDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+                      className="flex items-center gap-1 backdrop-blur-sm bg-white/[0.04] text-xs text-gray-400 rounded-full px-2 py-0.5 border border-white/[0.08] hover:border-white/[0.12] cursor-pointer transition-all"
+                    >
+                      <span className="truncate max-w-[120px]">{modelFilter ?? "Any model"}</span>
+                      <svg className={`w-3 h-3 shrink-0 transition-transform ${modelDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {modelDropdownOpen && (
+                      <div className="absolute z-50 mt-1 left-0 min-w-[200px] rounded-lg backdrop-blur-xl bg-[#0a0a1a]/95 border border-white/[0.1] shadow-2xl max-h-48 overflow-auto">
+                        <div
+                          onClick={() => { setModelFilter(null); setModelDropdownOpen(false); }}
+                          className={`px-3 py-1.5 text-xs cursor-pointer transition-colors ${
+                            modelFilter === null
+                              ? "bg-purple-500/15 text-purple-300"
+                              : "text-gray-300 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          Any model
+                        </div>
+                        {allModels.map((m) => (
+                          <div
+                            key={m}
+                            onClick={() => { setModelFilter(m); setModelDropdownOpen(false); }}
+                            className={`px-3 py-1.5 text-xs cursor-pointer transition-colors border-t border-white/[0.04] truncate ${
+                              modelFilter === m
+                                ? "bg-purple-500/15 text-purple-300"
+                                : "text-gray-300 hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            {m}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Spacer */}

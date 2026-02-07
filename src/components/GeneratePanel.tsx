@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups, DEFAULT_VARIANT_COUNT, MIN_VARIANT_COUNT, MAX_VARIANT_COUNT } from "@/lib/config";
 import { PROMPT_BANK } from "@/lib/prompts";
@@ -46,8 +46,22 @@ export default function GeneratePanel({
   const [mode, setMode] = useState<"raw" | "skill">("raw");
   const [variantCount, setVariantCount] = useState(DEFAULT_VARIANT_COUNT);
   const [modelEfforts, setModelEfforts] = useState<Record<string, ReasoningEffort>>({});
+  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
+  const promptDropdownRef = useRef<HTMLDivElement>(null);
 
   const modelGroups = getModelGroups();
+
+  // Close prompt dropdown on click outside
+  useEffect(() => {
+    if (!promptDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (promptDropdownRef.current && !promptDropdownRef.current.contains(e.target as Node)) {
+        setPromptDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [promptDropdownOpen]);
 
   // Clean up modelEfforts when models are deselected
   useEffect(() => {
@@ -311,18 +325,50 @@ export default function GeneratePanel({
               </div>
             )}
 
-            <select
-              value={selectedPromptId}
-              onChange={(e) => setSelectedPromptId(e.target.value)}
-              className="w-full backdrop-blur-sm bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-white/[0.08] focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30"
-            >
-              <option value="custom">Custom prompt...</option>
-              {filteredPrompts.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title} -- {p.category}
-                </option>
-              ))}
-            </select>
+            <div ref={promptDropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setPromptDropdownOpen(!promptDropdownOpen)}
+                className="w-full flex items-center justify-between backdrop-blur-sm bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-white/[0.08] hover:border-white/[0.14] focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30 transition-all text-left"
+              >
+                <span className="truncate">
+                  {selectedPromptId === "custom"
+                    ? "Custom prompt..."
+                    : filteredPrompts.find((p) => p.id === selectedPromptId)?.title ?? "Select prompt..."}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 shrink-0 ml-2 transition-transform ${promptDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {promptDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg backdrop-blur-xl bg-[#0a0a1a]/95 border border-white/[0.1] shadow-2xl max-h-60 overflow-auto">
+                  <div
+                    onClick={() => { setSelectedPromptId("custom"); setPromptDropdownOpen(false); }}
+                    className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      selectedPromptId === "custom"
+                        ? "bg-purple-500/15 text-purple-300"
+                        : "text-gray-300 hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    Custom prompt...
+                  </div>
+                  {filteredPrompts.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => { setSelectedPromptId(p.id); setPromptDropdownOpen(false); }}
+                      className={`px-3 py-2 text-sm cursor-pointer transition-colors border-t border-white/[0.04] ${
+                        selectedPromptId === p.id
+                          ? "bg-purple-500/15 text-purple-300"
+                          : "text-gray-300 hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      <span>{p.title}</span>
+                      <span className="text-gray-500 ml-2 text-xs">{p.category}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {selectedPromptId === "custom" ? (
               <textarea
