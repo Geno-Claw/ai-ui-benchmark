@@ -1,7 +1,6 @@
-import { readFileSync } from "fs";
-import path from "path";
 import { GenerateOptions, GenerationResult, ModelConfig, ReasoningEffort, Run } from "@/lib/types";
 import { VARIANT_TEMPERATURES } from "@/lib/config";
+import { SKILL_TEXT } from "@/lib/skill-text";
 import { callOpenRouter } from "./openrouter";
 
 export interface BenchmarkOptions {
@@ -11,7 +10,7 @@ export interface BenchmarkOptions {
   mode: "raw" | "skill";
   apiKey: string;
   variantsPerModel?: number;
-  onProgress?: (update: ProgressUpdate) => void;
+  onProgress?: (update: ProgressUpdate) => void | Promise<void>;
   onInit?: (metadata: {
     runId: string;
     prompt: string;
@@ -20,7 +19,7 @@ export interface BenchmarkOptions {
     mode: string;
     date: string;
     totalVariants: number;
-  }) => void;
+  }) => void | Promise<void>;
   signal?: AbortSignal;
   /** Per-model reasoning effort map (modelId → effort level) */
   modelEfforts?: Record<string, string>;
@@ -71,18 +70,6 @@ function generateRunId(promptTitle: string, mode: string): string {
   return `${date}-${slug}-${mode}-${ts}`;
 }
 
-/**
- * Load the frontend-design skill text for skill mode.
- */
-function loadSkillText(): string {
-  const skillPath = path.join(
-    process.cwd(),
-    "docs",
-    "skills",
-    "frontend-design-skill.md"
-  );
-  return readFileSync(skillPath, "utf-8");
-}
 
 /**
  * Build the full prompt for a given variant.
@@ -96,7 +83,7 @@ function buildPrompt(
   let prompt = "";
 
   if (mode === "skill") {
-    const skillText = loadSkillText();
+    const skillText = SKILL_TEXT;
     prompt = skillText + "\n\n" + basePrompt;
   } else {
     prompt = basePrompt;
@@ -147,7 +134,7 @@ export async function runBenchmark(
   }
 
   // Notify caller with run metadata before any generation starts
-  onInit?.({
+  await onInit?.({
     runId,
     prompt,
     promptTitle,
@@ -191,7 +178,7 @@ export async function runBenchmark(
         console.log(`[runner] ${model.id} variant ${variantNum}/${variantsPerModel} (temp=${temperature}${reasoningEffort ? `, effort=${reasoningEffort}` : ""}) — generating...`);
 
         // Report generating
-        onProgress?.({
+        await onProgress?.({
           runId,
           model: model.id,
           variant: variantNum,
@@ -222,7 +209,7 @@ export async function runBenchmark(
         }
 
         // Report completion with cost/duration/tokens and full result
-        onProgress?.({
+        await onProgress?.({
           runId,
           model: model.id,
           variant: variantNum,

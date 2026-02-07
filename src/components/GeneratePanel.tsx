@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { PromptConfig, ReasoningEffort } from "@/lib/types";
+import { ReasoningEffort } from "@/lib/types";
 import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+import { PROMPT_BANK } from "@/lib/prompts";
 import { ProgressState, GenerateParams } from "@/hooks/useBackgroundGeneration";
 
 const EFFORT_LABELS: Record<ReasoningEffort, { label: string; short: string }> = {
@@ -35,7 +36,7 @@ export default function GeneratePanel({
   onCancelGeneration,
   getEstimatedTimeRemaining,
 }: GeneratePanelProps) {
-  const [prompts, setPrompts] = useState<PromptConfig[]>([]);
+  const prompts = PROMPT_BANK;
   const [selectedPromptId, setSelectedPromptId] = useState<string>("custom");
   const [customPrompt, setCustomPrompt] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -63,15 +64,6 @@ export default function GeneratePanel({
     });
   }, [selectedModels]);
 
-  // Load prompts from API
-  useEffect(() => {
-    if (open) {
-      fetch("/api/prompts")
-        .then((res) => res.json())
-        .then((data: PromptConfig[]) => setPrompts(data))
-        .catch(() => setPrompts([]));
-    }
-  }, [open]);
 
   // Extract categories dynamically from loaded prompts
   const categories = Array.from(new Set(prompts.map((p) => p.category)));

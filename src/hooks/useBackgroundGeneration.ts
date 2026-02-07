@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Run, GenerationResult, ActiveJob } from "@/lib/types";
+import { Run, GenerationResult, ActiveJob, ModelConfig } from "@/lib/types";
 import { DEFAULT_MODELS } from "@/lib/config";
+import { getPromptById } from "@/lib/prompts";
+import { runBenchmark, ProgressUpdate } from "@/runner/generate";
 import {
   saveRun,
   loadRun as dbLoadRun,
@@ -34,30 +36,6 @@ export interface GenerateParams {
   models: string[];
   mode: "raw" | "skill";
   modelEfforts?: Record<string, string>;
-}
-
-interface ProgressEvent {
-  runId: string;
-  model: string;
-  variant: number;
-  status: "generating" | "complete" | "error";
-  total: number;
-  completed: number;
-  cost?: number;
-  durationMs?: number;
-  tokens?: { input: number; output: number };
-  error?: string;
-  result?: GenerationResult;
-}
-
-interface InitEvent {
-  runId: string;
-  prompt: string;
-  promptTitle: string;
-  models: string[];
-  mode: string;
-  date: string;
-  totalVariants: number;
 }
 
 export interface ResumableJob {
@@ -280,247 +258,213 @@ export function useBackgroundGeneration(
         await saveActiveJob(activeJob);
       }
 
+      // Resolve prompt locally (was done server-side in API route)
+      let promptText: string;
+      let promptTitle: string;
+
+      if (params.promptId) {
+        const loaded = getPromptById(params.promptId);
+        if (!loaded) {
+          setProgress({ status: "error", message: `Prompt '${params.promptId}' not found.`, current: 0, total: 0 });
+          return;
+        }
+        promptText = loaded.prompt;
+        promptTitle = loaded.title;
+      } else if (params.prompt) {
+        promptText = params.prompt;
+        promptTitle = "Custom Prompt";
+      } else {
+        setProgress({ status: "error", message: "No prompt provided.", current: 0, total: 0 });
+        return;
+      }
+
+      // Resolve model configs locally
+      const models = params.models
+        .map((id) => DEFAULT_MODELS.find((m) => m.id === id))
+        .filter((m): m is ModelConfig => m !== undefined);
+
+      if (models.length === 0) {
+        setProgress({ status: "error", message: "No valid models selected.", current: 0, total: 0 });
+        return;
+      }
+
       try {
-        const body: Record<string, unknown> = {
-          models: params.models,
+        const { run } = await runBenchmark({
+          prompt: promptText,
+          promptTitle,
+          models,
           mode: params.mode,
-        };
-
-        if (params.modelEfforts && Object.keys(params.modelEfforts).length > 0) {
-          body.modelEfforts = params.modelEfforts;
-        }
-
-        if (params.promptId) {
-          body.promptId = params.promptId;
-        } else if (params.prompt) {
-          body.prompt = params.prompt;
-        }
-
-        // Resume params
-        if (resumeOptions) {
-          body.resumeRunId = resumeOptions.resumeRunId;
-          body.skipVariants = resumeOptions.skipVariants;
-        }
-
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-openrouter-key": apiKey,
-          },
-          body: JSON.stringify(body),
+          apiKey,
+          modelEfforts: params.modelEfforts,
+          resumeRunId: resumeOptions?.resumeRunId,
+          skipVariants: resumeOptions?.skipVariants,
           signal: controller.signal,
-        });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || `HTTP ${res.status}`);
-        }
+          onInit: async (metadata) => {
+            if (resumeOptions) {
+              // For resume, load existing partial run and continue appending
+              const existingRun = await dbLoadRun(resumeOptions.resumeRunId);
+              if (existingRun) {
+                partialRunRef.current = existingRun;
+                setPartialRun(existingRun);
+                setActiveRunId(existingRun.id);
 
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const blocks = buffer.split("\n\n");
-          buffer = blocks.pop() || "";
-
-          for (const block of blocks) {
-            if (!block.trim()) continue;
-
-            const eventMatch = block.match(/^event: (.+)/m);
-            const dataMatch = block.match(/^data: (.+)/m);
-            if (!eventMatch || !dataMatch) continue;
-
-            const event = eventMatch[1];
-            const data = JSON.parse(dataMatch[1]);
-
-            if (event === "init") {
-              const initData = data as InitEvent;
-
-              if (resumeOptions) {
-                // For resume, load existing partial run and continue appending
-                const existingRun = await dbLoadRun(resumeOptions.resumeRunId);
-                if (existingRun) {
-                  partialRunRef.current = existingRun;
-                  setPartialRun(existingRun);
-                  setActiveRunId(existingRun.id);
-
-                  // Update active job with correct ID
-                  const job = await loadActiveJob();
-                  if (job) {
-                    job.id = existingRun.id;
-                    job.status = "active";
-                    await saveActiveJob(job);
-                  }
-                }
-              } else {
-                // Create empty Run shell for fresh start
-                const emptyDesigns: Record<string, GenerationResult[]> = {};
-                for (const modelId of initData.models) {
-                  emptyDesigns[modelId] = [];
-                }
-
-                const runShell: Run = {
-                  id: initData.runId,
-                  prompt: initData.prompt,
-                  promptTitle: initData.promptTitle,
-                  models: initData.models,
-                  mode: initData.mode as "raw" | "skill",
-                  date: initData.date,
-                  totalVariants: initData.totalVariants,
-                  designs: emptyDesigns,
-                };
-
-                partialRunRef.current = runShell;
-                setPartialRun(runShell);
-                setActiveRunId(initData.runId);
-
-                // Save initial shell to IndexedDB
-                await saveRun(runShell);
-
-                // Update active job with the real runId
+                // Update active job with correct ID
                 const job = await loadActiveJob();
                 if (job) {
-                  job.id = initData.runId;
+                  job.id = existingRun.id;
+                  job.status = "active";
                   await saveActiveJob(job);
                 }
               }
-            } else if (event === "progress") {
-              const pe = data as ProgressEvent;
-
-              // Accumulate cost
-              if (pe.cost && (pe.status === "complete" || pe.status === "error")) {
-                totalCostRef.current += pe.cost;
+            } else {
+              // Create empty Run shell for fresh start
+              const emptyDesigns: Record<string, GenerationResult[]> = {};
+              for (const modelId of metadata.models) {
+                emptyDesigns[modelId] = [];
               }
 
-              // Track completion times for ETA
-              if (pe.status === "complete" || pe.status === "error") {
-                completedTimesRef.current.push(Date.now());
+              const runShell: Run = {
+                id: metadata.runId,
+                prompt: metadata.prompt,
+                promptTitle: metadata.promptTitle,
+                models: metadata.models,
+                mode: metadata.mode as "raw" | "skill",
+                date: metadata.date,
+                totalVariants: metadata.totalVariants,
+                designs: emptyDesigns,
+              };
+
+              partialRunRef.current = runShell;
+              setPartialRun(runShell);
+              setActiveRunId(metadata.runId);
+
+              // Save initial shell to IndexedDB
+              await saveRun(runShell);
+
+              // Update active job with the real runId
+              const job = await loadActiveJob();
+              if (job) {
+                job.id = metadata.runId;
+                await saveActiveJob(job);
               }
-
-              // Append result to partial run if available
-              if (pe.result && partialRunRef.current) {
-                const current = partialRunRef.current;
-                const modelResults = [...(current.designs[pe.model] || [])];
-                modelResults.push(pe.result);
-                const updatedRun: Run = {
-                  ...current,
-                  designs: {
-                    ...current.designs,
-                    [pe.model]: modelResults,
-                  },
-                };
-                partialRunRef.current = updatedRun;
-                setPartialRun(updatedRun);
-
-                // Save incrementally to IndexedDB
-                await saveRun(updatedRun);
-
-                // Update active job progress
-                await updateJobProgress(pe.model, modelResults.length);
-              }
-
-              // For resume, pe.completed reflects only the remaining work done
-              // We need to add the skip offset to get the true total
-              const adjustedCompleted = resumeOptions
-                ? skipTotal + pe.completed
-                : pe.completed;
-
-              setProgress((prev) => {
-                const modelStatuses = { ...(prev.modelStatuses || {}) };
-                const ms = modelStatuses[pe.model] || {
-                  completed: resumeOptions?.skipVariants[pe.model] ?? 0,
-                  total: variantsPerModel,
-                };
-
-                if (pe.status === "complete") {
-                  modelStatuses[pe.model] = {
-                    ...ms,
-                    completed: ms.completed + 1,
-                  };
-                } else if (pe.status === "error") {
-                  modelStatuses[pe.model] = {
-                    ...ms,
-                    completed: ms.completed + 1,
-                    error: true,
-                    lastError: pe.error,
-                  };
-                }
-
-                const modelName =
-                  DEFAULT_MODELS.find((m) => m.id === pe.model)?.name ||
-                  pe.model;
-                const message =
-                  pe.status === "generating"
-                    ? `${modelName} — variant ${pe.variant}/5`
-                    : pe.status === "complete"
-                      ? `${modelName} — variant ${pe.variant}/5 ✓`
-                      : `${modelName} — variant ${pe.variant}/5 ✗`;
-
-                return {
-                  status: "generating",
-                  message,
-                  current: adjustedCompleted,
-                  total: totalVariants,
-                  cost: totalCostRef.current,
-                  modelStatuses,
-                };
-              });
-            } else if (event === "complete") {
-              // For resume, merge the new results into existing run
-              let finalRun: Run;
-              if (resumeOptions && partialRunRef.current) {
-                // The partial run already has all results appended incrementally
-                finalRun = partialRunRef.current;
-              } else {
-                // Replace partialRun with final Run from server
-                finalRun = data as Run;
-              }
-              await saveRun(finalRun);
-
-              partialRunRef.current = finalRun;
-              setPartialRun(finalRun);
-
-              // Clear active job — generation is done
-              await clearActiveJob();
-
-              setProgress((prev) => ({
-                ...prev,
-                status: "complete",
-                message: "Benchmark complete!",
-                current: totalVariants,
-                total: totalVariants,
-              }));
-
-              // Notify parent after brief delay
-              const completedRunId = finalRun.id;
-              setTimeout(() => {
-                setActiveRunId(null);
-                setPartialRun(null);
-                partialRunRef.current = null;
-                setProgress({
-                  status: "idle",
-                  message: "",
-                  current: 0,
-                  total: 0,
-                });
-                options?.onComplete?.(completedRunId);
-              }, 1500);
-            } else if (event === "error") {
-              setProgress((prev) => ({
-                ...prev,
-                status: "error",
-                message: data.error || "Unknown error",
-              }));
-              // Don't clear active job on error — it can be resumed
             }
-          }
-        }
+          },
+
+          onProgress: async (pe: ProgressUpdate) => {
+            // Accumulate cost
+            if (pe.cost && (pe.status === "complete" || pe.status === "error")) {
+              totalCostRef.current += pe.cost;
+            }
+
+            // Track completion times for ETA
+            if (pe.status === "complete" || pe.status === "error") {
+              completedTimesRef.current.push(Date.now());
+            }
+
+            // Append result to partial run if available
+            if (pe.result && partialRunRef.current) {
+              const current = partialRunRef.current;
+              const modelResults = [...(current.designs[pe.model] || [])];
+              modelResults.push(pe.result);
+              const updatedRun: Run = {
+                ...current,
+                designs: {
+                  ...current.designs,
+                  [pe.model]: modelResults,
+                },
+              };
+              partialRunRef.current = updatedRun;
+              setPartialRun(updatedRun);
+
+              // Save incrementally to IndexedDB
+              await saveRun(updatedRun);
+
+              // Update active job progress
+              await updateJobProgress(pe.model, modelResults.length);
+            }
+
+            // For resume, pe.completed reflects only the remaining work done
+            // We need to add the skip offset to get the true total
+            const adjustedCompleted = resumeOptions
+              ? skipTotal + pe.completed
+              : pe.completed;
+
+            setProgress((prev) => {
+              const modelStatuses = { ...(prev.modelStatuses || {}) };
+              const ms = modelStatuses[pe.model] || {
+                completed: resumeOptions?.skipVariants[pe.model] ?? 0,
+                total: variantsPerModel,
+              };
+
+              if (pe.status === "complete") {
+                modelStatuses[pe.model] = {
+                  ...ms,
+                  completed: ms.completed + 1,
+                };
+              } else if (pe.status === "error") {
+                modelStatuses[pe.model] = {
+                  ...ms,
+                  completed: ms.completed + 1,
+                  error: true,
+                  lastError: pe.error,
+                };
+              }
+
+              const modelName =
+                DEFAULT_MODELS.find((m) => m.id === pe.model)?.name ||
+                pe.model;
+              const message =
+                pe.status === "generating"
+                  ? `${modelName} — variant ${pe.variant}/5`
+                  : pe.status === "complete"
+                    ? `${modelName} — variant ${pe.variant}/5 ✓`
+                    : `${modelName} — variant ${pe.variant}/5 ✗`;
+
+              return {
+                status: "generating",
+                message,
+                current: adjustedCompleted,
+                total: totalVariants,
+                cost: totalCostRef.current,
+                modelStatuses,
+              };
+            });
+          },
+        });
+
+        // Generation complete — save final run
+        const finalRun = partialRunRef.current ?? run;
+        await saveRun(finalRun);
+
+        partialRunRef.current = finalRun;
+        setPartialRun(finalRun);
+
+        // Clear active job — generation is done
+        await clearActiveJob();
+
+        setProgress((prev) => ({
+          ...prev,
+          status: "complete",
+          message: "Benchmark complete!",
+          current: totalVariants,
+          total: totalVariants,
+        }));
+
+        // Notify parent after brief delay
+        const completedRunId = finalRun.id;
+        setTimeout(() => {
+          setActiveRunId(null);
+          setPartialRun(null);
+          partialRunRef.current = null;
+          setProgress({
+            status: "idle",
+            message: "",
+            current: 0,
+            total: 0,
+          });
+          options?.onComplete?.(completedRunId);
+        }, 1500);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           // Keep partial data, just reset active state

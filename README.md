@@ -11,8 +11,8 @@ Compare how different AI models generate frontend UIs from the same prompt. Run 
 - **Source code viewer** with syntax highlighting and line numbers
 - **Raw vs skill-augmented modes** — test with or without prompt engineering
 - **Prompt bank** with curated prompts across categories
-- **Archive system** with client-side search and filter
-- **Settings panel** with API key management and connection testing
+- **Fully client-side** — runs entirely in the browser, deployed as static files
+- **IndexedDB storage** — all run data persists locally in the browser
 
 ## Quick Start
 
@@ -25,36 +25,48 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), enter your OpenRouter API key in Settings, and run your first benchmark.
 
+## Live Demo
+
+Deployed via GitHub Pages: `https://geno-claw.github.io/ai-ui-benchmark/`
+
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 20+
 - npm
-- An OpenRouter API key — [get one here](https://openrouter.ai)
+- An OpenRouter API key — [get one here](https://openrouter.ai/keys)
 
 ## Configuration
 
-No `.env` files needed. The API key is entered in the Settings panel and stored in browser `localStorage` — it's never persisted server-side.
+No `.env` files needed. The API key is entered in the Settings panel and stored in browser `localStorage`. It is sent directly to OpenRouter from your browser — no server involved.
 
-Supported models are configured in [`src/lib/config.ts`](src/lib/config.ts). The defaults are:
+Supported models are configured in [`src/lib/config.ts`](src/lib/config.ts).
 
-| Model | OpenRouter ID |
-|---|---|
-| Claude Opus 4.6 | `anthropic/claude-opus-4-6` |
-| Claude Sonnet 4.5 | `anthropic/claude-sonnet-4-5` |
-| GPT-5.2 | `openai/gpt-5.2` |
-| Gemini 2.5 Pro | `google/gemini-2.5-pro-preview-06-05` |
+## Architecture
 
-## Project Structure
+This is a **fully static client-side app**. There is no server — all code runs in the browser.
 
 ```
-src/app/          — Next.js pages and API routes
+Browser (page.tsx orchestrates state)
+  → Runner modules (src/runner/)
+    → OpenRouter API (direct fetch from browser)
+  → IndexedDB (run storage, resume tracking)
+```
+
+### Project Structure
+
+```
+src/app/          — Next.js page and layout
 src/components/   — React UI components
-src/runner/       — Generation engine (OpenRouter client, archiver)
-src/lib/          — Shared types and config
-prompts/          — Curated prompt bank (JSON files)
-archive/          — Generated outputs (gitignored)
+src/runner/       — Generation engine (OpenRouter client, benchmark orchestrator)
+src/lib/          — Types, config, prompt bank, skill text, IndexedDB client
+src/hooks/        — useBackgroundGeneration hook
+prompts/          — Curated prompt bank (JSON files, bundled at build time)
 docs/             — Project spec and ADRs
 ```
+
+### Generation Pipeline
+
+Models run in parallel via `Promise.all`; within each model, 5 variants run sequentially to avoid rate limits. Temperature varies per variant: `[0.7, 0.8, 0.9, 1.0, 1.1]`. Each variant prompt includes an explicit differentiation instruction. Results are saved incrementally to IndexedDB — interrupted runs can be resumed.
 
 ## Adding Models
 
@@ -74,25 +86,36 @@ Create a JSON file in `prompts/` with this schema:
 }
 ```
 
-The prompt will appear in the Generate panel automatically.
+Then add the import to `src/lib/prompts.ts` and rebuild.
 
 ## Scripts
 
 ```bash
-npm run dev      # Development server
-npm run build    # Production build
+npm run dev      # Development server (localhost:3000)
+npm run build    # Static production build (outputs to out/)
 npm run lint     # Lint check
 ```
+
+## Deployment
+
+The app is deployed to GitHub Pages via GitHub Actions. On push to `main`, the workflow builds the static site and deploys the `out/` directory.
+
+To deploy your own fork:
+1. Enable GitHub Pages in repo settings (source: GitHub Actions)
+2. Push to `main`
+
+For custom domains, remove the `basePath` and `assetPrefix` in `next.config.ts`.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 |
+| Framework | Next.js 15 (static export) |
 | UI | React 19 |
-| Language | TypeScript |
+| Language | TypeScript 5.7 |
 | Styling | Tailwind CSS 4 |
-| AI API | OpenRouter |
+| AI API | OpenRouter (direct browser fetch) |
+| Storage | IndexedDB (via idb) |
 
 ## Project Board
 
@@ -101,48 +124,3 @@ npm run lint     # Lint check
 ## License
 
 MIT
-=======
-# AI UI Benchmark 🎨🤖
-
-Compare how different AI models generate UIs from the same prompts.
-
-## Concept
-
-Give multiple AI models the same UI design prompt and compare the results side-by-side. Each model generates **5 unique designs per prompt**, and you can easily swap between all designs to compare quality, creativity, and code correctness.
-
-## Test Modes
-
-### 1. Raw Prompt Test
-Each model receives the same natural language prompt and generates a complete UI component/page. Tests the model's inherent UI design and coding ability.
-
-### 2. Skill-Augmented Test
-Each model receives the same prompt **plus** the claude-code/front-end design skill context. Tests how well models leverage structured design guidance.
-
-## Models Under Test
-
-- Claude Opus 4.6
-- Claude Sonnet 4.5
-- GPT-5.2
-- Gemini 2.5 Pro
-- *(more to be added)*
-
-## Delivery Requirements
-
-- **5 designs per model per prompt** — each generation is a unique attempt
-- **Side-by-side comparison UI** — easily swap between all designs
-- **Live preview** — render each design in an iframe or similar
-- **Metadata tracking** — model, prompt, generation time, token usage
-- **Scoring/rating system** — manual rating for each design
-
-## Tech Stack
-
-TBD — likely Next.js or similar for the comparison UI, with a CLI runner for batch generation.
-
-## Project Board
-
-[AI UI Benchmark Project](https://github.com/users/Geno-Claw/projects/2)
-
-## Status
-
-🚧 **Early planning** — initial repo setup
-
