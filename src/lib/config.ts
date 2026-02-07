@@ -132,3 +132,7 @@ export function getModelGroups(): { label: string; models: ModelConfig[] }[] {
 }
 
 export const VARIANT_TEMPERATURES = [0.7, 0.8, 0.9, 1.0, 1.1];
+
+export const DEFAULT_VARIANT_COUNT = 5;
+export const MIN_VARIANT_COUNT = 1;
+export const MAX_VARIANT_COUNT = 10;

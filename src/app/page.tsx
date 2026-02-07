@@ -10,6 +10,7 @@ import Gallery from "@/components/Gallery";
 import ComparisonSlot from "@/components/ComparisonSlot";
 import Settings from "@/components/Settings";
 import GeneratePanel from "@/components/GeneratePanel";
+import GenerationIndicator from "@/components/GenerationIndicator";
 
 /** Build a model name lookup from DEFAULT_MODELS. */
 function buildModelNames(): Record<string, string> {
@@ -193,13 +194,10 @@ export default function Home() {
 
           {/* Background generation indicator pill */}
           {!generateOpen && isGenerating && (
-            <button
+            <GenerationIndicator
+              progress={progress}
               onClick={() => setGenerateOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-600/20 text-blue-300 border border-blue-500/40 hover:bg-blue-600/30 transition-colors animate-pulse"
-            >
-              <span>⚡</span>
-              <span>Generating {progress.current}/{progress.total}</span>
-            </button>
+            />
           )}
         </div>
 
@@ -324,8 +322,8 @@ export default function Home() {
                   <p className="text-xs text-gray-500">Test Claude, GPT, Gemini — all through OpenRouter</p>
                 </div>
                 <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
-                  <h3 className="text-sm font-medium text-white mb-1">5 Variants</h3>
-                  <p className="text-xs text-gray-500">Temperature variation for diverse designs</p>
+                  <h3 className="text-sm font-medium text-white mb-1">Up to 10 Variants</h3>
+                  <p className="text-xs text-gray-500">Configurable count with temperature variation</p>
                 </div>
                 <div className="rounded-lg border border-gray-800 bg-gray-900 p-4">
                   <h3 className="text-sm font-medium text-white mb-1">Live Preview</h3>

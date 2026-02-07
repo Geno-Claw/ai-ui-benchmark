@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ReasoningEffort } from "@/lib/types";
-import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+import { DEFAULT_MODELS, getModelGroups, DEFAULT_VARIANT_COUNT, MIN_VARIANT_COUNT, MAX_VARIANT_COUNT } from "@/lib/config";
 import { PROMPT_BANK } from "@/lib/prompts";
 import { ProgressState, GenerateParams } from "@/hooks/useBackgroundGeneration";
 
@@ -44,6 +44,7 @@ export default function GeneratePanel({
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
+  const [variantCount, setVariantCount] = useState(DEFAULT_VARIANT_COUNT);
   const [modelEfforts, setModelEfforts] = useState<Record<string, ReasoningEffort>>({});
 
   const modelGroups = getModelGroups();
@@ -155,6 +156,7 @@ export default function GeneratePanel({
     const params: GenerateParams = {
       models: Array.from(selectedModels),
       mode,
+      variantCount,
     };
 
     // Send per-model efforts (only non-none entries)
@@ -506,14 +508,46 @@ export default function GeneratePanel({
             </div>
           </div>
 
+          {/* Variant Count */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Variants per Model
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setVariantCount((v) => Math.max(MIN_VARIANT_COUNT, v - 1))}
+                disabled={variantCount <= MIN_VARIANT_COUNT}
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-800 border border-gray-700 text-gray-400 hover:border-gray-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+              </button>
+              <span className="text-lg font-semibold text-white w-8 text-center">
+                {variantCount}
+              </span>
+              <button
+                onClick={() => setVariantCount((v) => Math.min(MAX_VARIANT_COUNT, v + 1))}
+                disabled={variantCount >= MAX_VARIANT_COUNT}
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-800 border border-gray-700 text-gray-400 hover:border-gray-600 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+              <span className="text-xs text-gray-500">
+                {variantCount === 1
+                  ? "Single design per model"
+                  : `${variantCount} unique designs per model`}
+              </span>
+            </div>
+          </div>
+
           {/* Summary */}
           <div className="bg-gray-800/50 rounded-lg px-4 py-3 text-sm text-gray-400">
             Will generate{" "}
             <span className="text-white font-medium">
-              {selectedModels.size * 5}
+              {selectedModels.size * variantCount}
             </span>{" "}
             designs ({selectedModels.size} model
-            {selectedModels.size !== 1 ? "s" : ""} × 5 variants)
+            {selectedModels.size !== 1 ? "s" : ""} × {variantCount} variant
+            {variantCount !== 1 ? "s" : ""})
             {reasoningSummary && (
               <span className="text-amber-400"> · reasoning: {reasoningSummary}</span>
             )}
@@ -715,7 +749,7 @@ export default function GeneratePanel({
                 disabled={!canGenerate()}
                 className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Generate {selectedModels.size * 5} Designs
+                Generate {selectedModels.size * variantCount} Designs
               </button>
             )}
           </div>

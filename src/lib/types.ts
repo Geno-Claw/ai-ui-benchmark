@@ -59,6 +59,7 @@ export interface ActiveJob {
     models: string[];
     mode: "raw" | "skill";
     modelEfforts?: Record<string, string>;
+    variantCount?: number;
   };
   startedAt: string; // ISO timestamp
   completedVariants: Record<string, number>; // modelId -> count of completed variants
