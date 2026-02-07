@@ -45,28 +45,28 @@ export default function Gallery({ run, onFullscreen, isGenerating }: GalleryProp
       {/* Run info header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-white">{run.promptTitle}</h2>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+          <h2 className="text-xl font-semibold text-white font-[family-name:var(--font-sora)]">{run.promptTitle}</h2>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium backdrop-blur-sm ${
             run.mode === "skill"
               ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-              : "bg-gray-700 text-gray-400 border border-gray-600"
+              : "bg-white/[0.06] text-gray-400 border border-white/[0.08]"
           }`}>
             {run.mode}
           </span>
           {totalRunCost > 0 && (
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-500/15 text-teal-300 border border-teal-500/25 backdrop-blur-sm">
               Total: {formatCost(totalRunCost)}
             </span>
           )}
         </div>
         <p className="text-sm text-gray-500 max-w-3xl line-clamp-2">{run.prompt}</p>
         <div className="flex items-center gap-4 text-xs text-gray-500">
-          <span>{run.models.length} models · {run.totalVariants} variants</span>
+          <span>{run.models.length} models &middot; {run.totalVariants} variants</span>
           <span>{new Date(run.date).toLocaleDateString()}</span>
         </div>
       </div>
 
-      {/* Design grid — one ComparisonSlot per model */}
+      {/* Design grid -- one ComparisonSlot per model */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {run.models.map((originalModelId) => {
           const displayModelId = slotModels[originalModelId] || originalModelId;

@@ -1,1 +1,208 @@
 @import "tailwindcss";
+
+/* ===== Aurora Background Animation ===== */
+@keyframes aurora-1 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.4;
+  }
+  25% {
+    transform: translate(10%, -15%) scale(1.1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-5%, 10%) scale(0.95);
+    opacity: 0.35;
+  }
+  75% {
+    transform: translate(-10%, -5%) scale(1.05);
+    opacity: 0.55;
+  }
+}
+
+@keyframes aurora-2 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translate(-15%, 10%) scale(1.15);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(10%, -10%) scale(0.9);
+    opacity: 0.25;
+  }
+  75% {
+    transform: translate(5%, 15%) scale(1.1);
+    opacity: 0.45;
+  }
+}
+
+@keyframes aurora-3 {
+  0%, 100% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.35;
+  }
+  25% {
+    transform: translate(5%, 20%) scale(0.95);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-15%, -5%) scale(1.1);
+    opacity: 0.3;
+  }
+  75% {
+    transform: translate(10%, -10%) scale(1.05);
+    opacity: 0.55;
+  }
+}
+
+/* Aurora blob container */
+.aurora-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora-blob-1 {
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60vw;
+  height: 60vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+  animation: aurora-1 20s ease-in-out infinite;
+  filter: blur(80px);
+}
+
+.aurora-blob-2 {
+  position: absolute;
+  top: 30%;
+  right: -15%;
+  width: 50vw;
+  height: 50vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.12) 0%, transparent 70%);
+  animation: aurora-2 25s ease-in-out infinite;
+  filter: blur(80px);
+}
+
+.aurora-blob-3 {
+  position: absolute;
+  bottom: -15%;
+  left: 20%;
+  width: 55vw;
+  height: 55vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  animation: aurora-3 22s ease-in-out infinite;
+  filter: blur(80px);
+}
+
+/* ===== Glass Utility Classes ===== */
+.glass {
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-strong {
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-subtle {
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ===== Button Glow Effects ===== */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.3), 0 0 60px rgba(168, 85, 247, 0.1);
+}
+
+.glow-teal {
+  box-shadow: 0 0 20px rgba(20, 184, 166, 0.3), 0 0 60px rgba(20, 184, 166, 0.1);
+}
+
+.glow-blue {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 0 60px rgba(59, 130, 246, 0.1);
+}
+
+.glow-purple-subtle {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+}
+
+.glow-teal-subtle {
+  box-shadow: 0 0 12px rgba(20, 184, 166, 0.2);
+}
+
+.glow-blue-subtle {
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+/* ===== Custom Scrollbar ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(168, 85, 247, 0.25);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.4);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ===== Selection Styling ===== */
+::selection {
+  background: rgba(168, 85, 247, 0.35);
+  color: #fff;
+}
+
+::-moz-selection {
+  background: rgba(168, 85, 247, 0.35);
+  color: #fff;
+}
+
+/* ===== Gradient Text Utility ===== */
+.text-gradient-aurora {
+  background: linear-gradient(135deg, #a855f7, #14b8a6, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Aurora Border Glow ===== */
+.aurora-border-glow {
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.2), 0 0 30px rgba(20, 184, 166, 0.1), 0 0 45px rgba(59, 130, 246, 0.1);
+}
+
+/* ===== Smooth Transitions ===== */
+button, a, input, select, textarea {
+  transition: all 0.2s ease;
+}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Run, GenerationResult, ActiveJob, ModelConfig } from "@/lib/types";
-import { DEFAULT_MODELS } from "@/lib/config";
+import { DEFAULT_MODELS, DEFAULT_VARIANT_COUNT } from "@/lib/config";
 import { getPromptById } from "@/lib/prompts";
 import { runBenchmark, ProgressUpdate } from "@/runner/generate";
 import {
@@ -36,6 +36,7 @@ export interface GenerateParams {
   models: string[];
   mode: "raw" | "skill";
   modelEfforts?: Record<string, string>;
+  variantCount?: number;
 }
 
 export interface ResumableJob {
@@ -199,17 +200,32 @@ export function useBackgroundGeneration(
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
-      totalCostRef.current = 0;
       completedTimesRef.current = [];
       startTimeRef.current = Date.now();
 
-      const variantsPerModel = 5;
+      const variantsPerModel = params.variantCount ?? DEFAULT_VARIANT_COUNT;
       const totalVariants = params.models.length * variantsPerModel;
 
       // Calculate how many we're skipping for resume
       const skipTotal = resumeOptions
         ? Object.values(resumeOptions.skipVariants).reduce((a, b) => a + b, 0)
         : 0;
+
+      // Seed cost from existing run data when resuming, otherwise start at 0
+      if (resumeOptions) {
+        const existingRun = await dbLoadRun(resumeOptions.resumeRunId);
+        if (existingRun) {
+          totalCostRef.current = Object.values(existingRun.designs).reduce(
+            (sum, results) =>
+              sum + results.reduce((s, r) => s + (r.cost ?? 0), 0),
+            0
+          );
+        } else {
+          totalCostRef.current = 0;
+        }
+      } else {
+        totalCostRef.current = 0;
+      }
 
       // Initialize model statuses
       const initialStatuses: Record<string, ModelStatus> = {};
@@ -228,7 +244,7 @@ export function useBackgroundGeneration(
           : "Starting benchmark…",
         current: skipTotal,
         total: totalVariants,
-        cost: 0,
+        cost: totalCostRef.current,
         modelStatuses: initialStatuses,
       });
 
@@ -245,6 +261,7 @@ export function useBackgroundGeneration(
             models: params.models,
             mode: params.mode,
             modelEfforts: params.modelEfforts,
+            variantCount: variantsPerModel,
           },
           startedAt: new Date().toISOString(),
           completedVariants: Object.fromEntries(
@@ -295,6 +312,7 @@ export function useBackgroundGeneration(
           models,
           mode: params.mode,
           apiKey,
+          variantsPerModel,
           modelEfforts: params.modelEfforts,
           resumeRunId: resumeOptions?.resumeRunId,
           skipVariants: resumeOptions?.skipVariants,
@@ -416,10 +434,10 @@ export function useBackgroundGeneration(
                 pe.model;
               const message =
                 pe.status === "generating"
-                  ? `${modelName} — variant ${pe.variant}/5`
+                  ? `${modelName} — variant ${pe.variant}/${variantsPerModel}`
                   : pe.status === "complete"
-                    ? `${modelName} — variant ${pe.variant}/5 ✓`
-                    : `${modelName} — variant ${pe.variant}/5 ✗`;
+                    ? `${modelName} — variant ${pe.variant}/${variantsPerModel} ✓`
+                    : `${modelName} — variant ${pe.variant}/${variantsPerModel} ✗`;
 
               return {
                 status: "generating",
@@ -504,6 +522,7 @@ export function useBackgroundGeneration(
         models: job.params.models,
         mode: job.params.mode,
         modelEfforts: job.params.modelEfforts,
+        variantCount: job.params.variantCount,
       },
       {
         resumeRunId: job.id,

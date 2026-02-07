@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ReasoningEffort } from "@/lib/types";
-import { DEFAULT_MODELS, getModelGroups } from "@/lib/config";
+import { DEFAULT_MODELS, getModelGroups, DEFAULT_VARIANT_COUNT, MIN_VARIANT_COUNT, MAX_VARIANT_COUNT } from "@/lib/config";
 import { PROMPT_BANK } from "@/lib/prompts";
 import { ProgressState, GenerateParams } from "@/hooks/useBackgroundGeneration";
 
@@ -44,9 +44,24 @@ export default function GeneratePanel({
     () => new Set(DEFAULT_MODELS.map((m) => m.id))
   );
   const [mode, setMode] = useState<"raw" | "skill">("raw");
+  const [variantCount, setVariantCount] = useState(DEFAULT_VARIANT_COUNT);
   const [modelEfforts, setModelEfforts] = useState<Record<string, ReasoningEffort>>({});
+  const [promptDropdownOpen, setPromptDropdownOpen] = useState(false);
+  const promptDropdownRef = useRef<HTMLDivElement>(null);
 
   const modelGroups = getModelGroups();
+
+  // Close prompt dropdown on click outside
+  useEffect(() => {
+    if (!promptDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (promptDropdownRef.current && !promptDropdownRef.current.contains(e.target as Node)) {
+        setPromptDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [promptDropdownOpen]);
 
   // Clean up modelEfforts when models are deselected
   useEffect(() => {
@@ -155,6 +170,7 @@ export default function GeneratePanel({
     const params: GenerateParams = {
       models: Array.from(selectedModels),
       mode,
+      variantCount,
     };
 
     // Send per-model efforts (only non-none entries)
@@ -201,7 +217,7 @@ export default function GeneratePanel({
         const shortName = model
           ? model.name.replace(/^(Claude |GPT-|Gemini |DeepSeek |Qwen3 |Kimi |GLM |MiniMax )/, "")
           : modelId;
-        return `${shortName}→${EFFORT_LABELS[effort].short}`;
+        return `${shortName}->${EFFORT_LABELS[effort].short}`;
       })
       .join(", ");
   })();
@@ -210,20 +226,20 @@ export default function GeneratePanel({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 z-40"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-x-4 top-[5%] bottom-[5%] max-w-3xl mx-auto z-50 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="fixed inset-x-4 top-[5%] bottom-[5%] max-w-3xl mx-auto z-50 backdrop-blur-xl bg-[#0a0a1a]/90 border border-white/[0.08] rounded-2xl shadow-2xl flex flex-col overflow-hidden aurora-border-glow">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 shrink-0">
-          <h2 className="text-lg font-semibold text-white">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+          <h2 className="text-lg font-semibold text-white font-[family-name:var(--font-sora)]">
             New Benchmark Run
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
           >
             <svg
               className="w-5 h-5"
@@ -245,7 +261,7 @@ export default function GeneratePanel({
         <div className="flex-1 overflow-auto p-6 space-y-6">
           {/* API Key Warning */}
           {!hasApiKey && (
-            <div className="flex items-center gap-3 bg-amber-500/10 text-amber-400 px-4 py-3 rounded-lg text-sm">
+            <div className="flex items-center gap-3 bg-amber-500/10 text-amber-400 px-4 py-3 rounded-lg text-sm border border-amber-500/20 backdrop-blur-sm">
               <svg
                 className="w-5 h-5 shrink-0"
                 fill="none"
@@ -290,16 +306,16 @@ export default function GeneratePanel({
                     }}
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
                       selectedCategory === cat
-                        ? "bg-blue-600/20 text-blue-300 border border-blue-500/40"
-                        : "bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600 hover:text-gray-300"
+                        ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                        : "backdrop-blur-sm bg-white/[0.04] text-gray-400 border border-white/[0.06] hover:border-white/[0.12] hover:text-gray-300"
                     }`}
                   >
                     {cat}
                     <span
                       className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                         selectedCategory === cat
-                          ? "bg-blue-500/20 text-blue-300"
-                          : "bg-gray-700 text-gray-500"
+                          ? "bg-purple-500/20 text-purple-300"
+                          : "bg-white/[0.06] text-gray-500"
                       }`}
                     >
                       {categoryCounts[cat] ?? 0}
@@ -309,18 +325,50 @@ export default function GeneratePanel({
               </div>
             )}
 
-            <select
-              value={selectedPromptId}
-              onChange={(e) => setSelectedPromptId(e.target.value)}
-              className="w-full bg-gray-800 text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-gray-700 focus:border-blue-500 focus:outline-none"
-            >
-              <option value="custom">Custom prompt…</option>
-              {filteredPrompts.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title} — {p.category}
-                </option>
-              ))}
-            </select>
+            <div ref={promptDropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setPromptDropdownOpen(!promptDropdownOpen)}
+                className="w-full flex items-center justify-between backdrop-blur-sm bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-white/[0.08] hover:border-white/[0.14] focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30 transition-all text-left"
+              >
+                <span className="truncate">
+                  {selectedPromptId === "custom"
+                    ? "Custom prompt..."
+                    : filteredPrompts.find((p) => p.id === selectedPromptId)?.title ?? "Select prompt..."}
+                </span>
+                <svg className={`w-4 h-4 text-gray-400 shrink-0 ml-2 transition-transform ${promptDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {promptDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-full rounded-lg backdrop-blur-xl bg-[#0a0a1a]/95 border border-white/[0.1] shadow-2xl max-h-60 overflow-auto">
+                  <div
+                    onClick={() => { setSelectedPromptId("custom"); setPromptDropdownOpen(false); }}
+                    className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      selectedPromptId === "custom"
+                        ? "bg-purple-500/15 text-purple-300"
+                        : "text-gray-300 hover:bg-white/[0.08]"
+                    }`}
+                  >
+                    Custom prompt...
+                  </div>
+                  {filteredPrompts.map((p) => (
+                    <div
+                      key={p.id}
+                      onClick={() => { setSelectedPromptId(p.id); setPromptDropdownOpen(false); }}
+                      className={`px-3 py-2 text-sm cursor-pointer transition-colors border-t border-white/[0.04] ${
+                        selectedPromptId === p.id
+                          ? "bg-purple-500/15 text-purple-300"
+                          : "text-gray-300 hover:bg-white/[0.08]"
+                      }`}
+                    >
+                      <span>{p.title}</span>
+                      <span className="text-gray-500 ml-2 text-xs">{p.category}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {selectedPromptId === "custom" ? (
               <textarea
@@ -328,10 +376,10 @@ export default function GeneratePanel({
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Build a modern landing page for a SaaS product..."
                 rows={4}
-                className="w-full bg-gray-800 text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-gray-700 focus:border-blue-500 focus:outline-none resize-none"
+                className="w-full backdrop-blur-sm bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2.5 text-sm border border-white/[0.08] focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/30 resize-none"
               />
             ) : selectedPrompt ? (
-              <div className="bg-gray-800/50 rounded-lg px-4 py-3 text-sm text-gray-400">
+              <div className="backdrop-blur-sm bg-white/[0.03] rounded-lg px-4 py-3 text-sm text-gray-400 border border-white/[0.06]">
                 <p className="text-gray-500 text-xs mb-1">
                   {selectedPrompt.description}
                 </p>
@@ -340,7 +388,7 @@ export default function GeneratePanel({
             ) : null}
           </div>
 
-          {/* Model Selection — grouped by provider */}
+          {/* Model Selection -- grouped by provider */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-sm font-medium text-gray-300">
@@ -358,7 +406,7 @@ export default function GeneratePanel({
                 </button>
                 <button
                   onClick={selectAll}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
                 >
                   Select all
                 </button>
@@ -385,14 +433,14 @@ export default function GeneratePanel({
                               onClick={() => toggleModel(model.id)}
                               className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left transition-all border flex-1 min-w-0 ${
                                 isSelected
-                                  ? "bg-blue-600/10 border-blue-500/50 text-blue-300"
-                                  : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                                  ? "bg-purple-500/10 border-purple-500/30 text-purple-300"
+                                  : "backdrop-blur-sm bg-white/[0.03] border-white/[0.06] text-gray-400 hover:border-white/[0.12]"
                               }`}
                             >
                               <div
                                 className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${
                                   isSelected
-                                    ? "bg-blue-600 border-blue-500"
+                                    ? "bg-purple-600 border-purple-500"
                                     : "border-gray-600"
                                 }`}
                               >
@@ -415,7 +463,7 @@ export default function GeneratePanel({
                               <span className="truncate">{model.name}</span>
                               {hasReasoning && (
                                 <span className="ml-auto text-[9px] px-1 py-0.5 rounded bg-amber-500/10 text-amber-400 shrink-0" title="Supports reasoning">
-                                  🧠
+                                  R
                                 </span>
                               )}
                             </button>
@@ -432,9 +480,9 @@ export default function GeneratePanel({
                                       className={`px-1.5 py-1 rounded text-[10px] font-medium transition-all ${
                                         currentEffort === effort
                                           ? effort === "none"
-                                            ? "bg-gray-700 text-gray-200"
+                                            ? "bg-white/[0.08] text-gray-200"
                                             : "bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/40"
-                                          : "text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+                                          : "text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]"
                                       }`}
                                     >
                                       {EFFORT_LABELS[effort].label}
@@ -452,7 +500,7 @@ export default function GeneratePanel({
               ))}
             </div>
 
-            {/* "Set all" shortcut — only when reasoning models are selected */}
+            {/* "Set all" shortcut -- only when reasoning models are selected */}
             {anySelectedSupportsReasoning && (
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-[11px] text-gray-500">Set all reasoning:</span>
@@ -461,7 +509,7 @@ export default function GeneratePanel({
                     <button
                       key={effort}
                       onClick={() => setAllEfforts(effort)}
-                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-all"
+                      className="px-1.5 py-0.5 rounded text-[10px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.06] transition-all"
                     >
                       {EFFORT_LABELS[effort].label}
                     </button>
@@ -481,8 +529,8 @@ export default function GeneratePanel({
                 onClick={() => setMode("raw")}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                   mode === "raw"
-                    ? "bg-gray-700 border-gray-600 text-white"
-                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                    ? "bg-white/[0.08] border-white/[0.12] text-white"
+                    : "backdrop-blur-sm bg-white/[0.03] border-white/[0.06] text-gray-400 hover:border-white/[0.1]"
                 }`}
               >
                 <div className="font-medium">Raw</div>
@@ -494,8 +542,8 @@ export default function GeneratePanel({
                 onClick={() => setMode("skill")}
                 className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all border ${
                   mode === "skill"
-                    ? "bg-purple-600/20 border-purple-500/50 text-purple-300"
-                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600"
+                    ? "bg-purple-600/20 border-purple-500/30 text-purple-300"
+                    : "backdrop-blur-sm bg-white/[0.03] border-white/[0.06] text-gray-400 hover:border-white/[0.1]"
                 }`}
               >
                 <div className="font-medium">Skill-Augmented</div>
@@ -506,22 +554,54 @@ export default function GeneratePanel({
             </div>
           </div>
 
+          {/* Variant Count */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Variants per Model
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setVariantCount((v) => Math.max(MIN_VARIANT_COUNT, v - 1))}
+                disabled={variantCount <= MIN_VARIANT_COUNT}
+                className="w-8 h-8 rounded-lg flex items-center justify-center backdrop-blur-sm bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:border-white/[0.12] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" /></svg>
+              </button>
+              <span className="text-lg font-semibold text-white w-8 text-center">
+                {variantCount}
+              </span>
+              <button
+                onClick={() => setVariantCount((v) => Math.min(MAX_VARIANT_COUNT, v + 1))}
+                disabled={variantCount >= MAX_VARIANT_COUNT}
+                className="w-8 h-8 rounded-lg flex items-center justify-center backdrop-blur-sm bg-white/[0.04] border border-white/[0.08] text-gray-400 hover:border-white/[0.12] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+              </button>
+              <span className="text-xs text-gray-500">
+                {variantCount === 1
+                  ? "Single design per model"
+                  : `${variantCount} unique designs per model`}
+              </span>
+            </div>
+          </div>
+
           {/* Summary */}
-          <div className="bg-gray-800/50 rounded-lg px-4 py-3 text-sm text-gray-400">
+          <div className="backdrop-blur-sm bg-white/[0.03] rounded-lg px-4 py-3 text-sm text-gray-400 border border-white/[0.06]">
             Will generate{" "}
             <span className="text-white font-medium">
-              {selectedModels.size * 5}
+              {selectedModels.size * variantCount}
             </span>{" "}
             designs ({selectedModels.size} model
-            {selectedModels.size !== 1 ? "s" : ""} × 5 variants)
+            {selectedModels.size !== 1 ? "s" : ""} x {variantCount} variant
+            {variantCount !== 1 ? "s" : ""})
             {reasoningSummary && (
-              <span className="text-amber-400"> · reasoning: {reasoningSummary}</span>
+              <span className="text-amber-400"> &middot; reasoning: {reasoningSummary}</span>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-800 shrink-0 space-y-3">
+        <div className="px-6 py-4 border-t border-white/[0.06] shrink-0 space-y-3">
           {/* Progress */}
           {progress.status !== "idle" && (
             <div className="space-y-3">
@@ -529,9 +609,9 @@ export default function GeneratePanel({
               <div
                 className={`text-sm flex items-center gap-2 ${
                   progress.status === "generating"
-                    ? "text-blue-400"
+                    ? "text-purple-400"
                     : progress.status === "complete"
-                      ? "text-green-400"
+                      ? "text-teal-400"
                       : "text-red-400"
                 }`}
               >
@@ -590,7 +670,7 @@ export default function GeneratePanel({
                 {progress.status === "generating" && (
                   <span className="text-xs text-gray-500">
                     {progress.current}/{progress.total}
-                    {eta && ` · ${eta} remaining`}
+                    {eta && ` &middot; ${eta} remaining`}
                   </span>
                 )}
               </div>
@@ -598,9 +678,9 @@ export default function GeneratePanel({
               {/* Progress bar */}
               {progress.status === "generating" && progress.total > 0 && (
                 <div className="space-y-1">
-                  <div className="w-full bg-gray-800 rounded-full h-2">
+                  <div className="w-full backdrop-blur-sm bg-white/[0.04] rounded-full h-2 border border-white/[0.06]">
                     <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-purple-600 to-teal-500 h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.max(2, percentage)}%`,
                       }}
@@ -627,21 +707,21 @@ export default function GeneratePanel({
                       return (
                         <div
                           key={modelId}
-                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs ${
+                          className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs backdrop-blur-sm border ${
                             ms.error
-                              ? "bg-red-500/10 text-red-400"
+                              ? "bg-red-500/10 text-red-400 border-red-500/20"
                               : done
-                                ? "bg-green-500/10 text-green-400"
+                                ? "bg-teal-500/10 text-teal-400 border-teal-500/20"
                                 : ms.completed > 0
-                                  ? "bg-blue-500/10 text-blue-300"
-                                  : "bg-gray-800 text-gray-500"
+                                  ? "bg-purple-500/10 text-purple-300 border-purple-500/20"
+                                  : "bg-white/[0.03] text-gray-500 border-white/[0.06]"
                           }`}
                         >
                           {done ? (
                             ms.error ? (
-                              <span>⚠</span>
+                              <span>!</span>
                             ) : (
-                              <span>✓</span>
+                              <span>ok</span>
                             )
                           ) : ms.completed > 0 ? (
                             <svg
@@ -692,30 +772,30 @@ export default function GeneratePanel({
               <>
                 <button
                   onClick={onClose}
-                  className="px-4 py-3 rounded-lg text-sm font-semibold bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors"
+                  className="px-4 py-3 rounded-lg text-sm font-semibold backdrop-blur-sm bg-white/[0.06] border border-white/[0.08] text-gray-300 hover:bg-white/[0.1] transition-all"
                 >
                   Minimize
                 </button>
                 <button
                   onClick={onCancelGeneration}
-                  className="px-4 py-3 rounded-lg text-sm font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30 transition-colors"
+                  className="px-4 py-3 rounded-lg text-sm font-semibold bg-red-600/20 text-red-400 border border-red-500/30 hover:bg-red-600/30 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   disabled
-                  className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold bg-blue-600/50 text-white/60 cursor-not-allowed"
+                  className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold bg-gradient-to-r from-purple-600/50 to-blue-600/50 text-white/60 cursor-not-allowed"
                 >
-                  Generating…
+                  Generating...
                 </button>
               </>
             ) : (
               <button
                 onClick={handleGenerate}
                 disabled={!canGenerate()}
-                className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-4 py-3 rounded-lg text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:shadow-purple-500/25"
               >
-                Generate {selectedModels.size * 5} Designs
+                Generate {selectedModels.size * variantCount} Designs
               </button>
             )}
           </div>

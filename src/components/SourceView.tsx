@@ -24,12 +24,12 @@ function highlightHTML(code: string): { lineNumber: number; html: string }[] {
     // Highlight tags
     highlighted = highlighted.replace(
       /(&lt;\/?)([\w-]+)/g,
-      '$1<span class="text-blue-400">$2</span>'
+      '$1<span class="text-purple-400">$2</span>'
     );
     // Highlight attributes
     highlighted = highlighted.replace(
       /\s([\w-]+)(=)/g,
-      ' <span class="text-green-400">$1</span>$2'
+      ' <span class="text-teal-400">$1</span>$2'
     );
     // Highlight strings
     highlighted = highlighted.replace(
@@ -65,16 +65,16 @@ export default function SourceView({ html }: SourceViewProps) {
   };
 
   return (
-    <div className="h-full flex flex-col rounded-lg border border-gray-800 bg-gray-950 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 bg-gray-900 shrink-0">
+    <div className="h-full flex flex-col rounded-lg border border-white/[0.06] bg-[#050510] overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] backdrop-blur-xl bg-white/[0.03] shrink-0">
         <span className="text-sm font-medium text-gray-300">Source Code</span>
         <button
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md backdrop-blur-sm bg-white/[0.04] border border-white/[0.06] text-gray-300 hover:bg-white/[0.08] hover:text-white transition-all"
         >
           {copied ? (
             <>
-              <svg className="w-3.5 h-3.5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               Copied!
@@ -93,8 +93,8 @@ export default function SourceView({ html }: SourceViewProps) {
         <pre className="text-xs leading-5 p-0 m-0">
           <code>
             {lines.map((line) => (
-              <div key={line.lineNumber} className="flex hover:bg-gray-900/50">
-                <span className="sticky left-0 w-12 shrink-0 text-right pr-4 text-gray-600 select-none bg-gray-950">
+              <div key={line.lineNumber} className="flex hover:bg-white/[0.02]">
+                <span className="sticky left-0 w-12 shrink-0 text-right pr-4 text-gray-600 select-none bg-[#050510]">
                   {line.lineNumber}
                 </span>
                 <span

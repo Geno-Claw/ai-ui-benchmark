@@ -24,9 +24,23 @@ export default function RunSelector({
   const [searchQuery, setSearchQuery] = useState("");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
   const [modelFilter, setModelFilter] = useState<string | null>(null);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentRun = runs.find((r) => r.id === currentRunId);
+
+  // Close model dropdown on click outside
+  useEffect(() => {
+    if (!modelDropdownOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) {
+        setModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [modelDropdownOpen]);
 
   // Collect all unique models across runs
   const allModels = useMemo(() => {
@@ -42,7 +56,7 @@ export default function RunSelector({
   // Filter runs
   const filteredRuns = useMemo(() => {
     return runs.filter((run) => {
-      // Search filter — match on promptTitle or prompt content
+      // Search filter -- match on promptTitle or prompt content
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchesTitle = run.promptTitle.toLowerCase().includes(q);
@@ -101,7 +115,7 @@ export default function RunSelector({
 
   const handleClose = () => {
     setIsOpen(false);
-    // Don't clear filters on close — preserve state for UX
+    // Don't clear filters on close -- preserve state for UX
   };
 
   if (runs.length === 0) {
@@ -115,16 +129,16 @@ export default function RunSelector({
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-gray-800 text-gray-200 rounded-lg px-3 py-2 text-sm border border-gray-700 hover:border-gray-600 focus:border-blue-500 focus:outline-none transition-colors min-w-[200px] max-w-[360px]"
+        className="flex items-center gap-2 backdrop-blur-xl bg-white/[0.04] text-gray-200 rounded-lg px-3 py-2 text-sm border border-white/[0.08] hover:border-white/[0.15] focus:border-purple-500/50 focus:outline-none transition-all min-w-[200px] max-w-[360px]"
       >
         <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
         </svg>
         <span className="truncate flex-1 text-left">
-          {currentRun ? `${currentRun.promptTitle} (${currentRun.mode})` : "Select a run…"}
+          {currentRun ? `${currentRun.promptTitle} (${currentRun.mode})` : "Select a run..."}
         </span>
         {hasActiveFilters && (
-          <span className="shrink-0 w-2 h-2 rounded-full bg-blue-500" title="Filters active" />
+          <span className="shrink-0 w-2 h-2 rounded-full bg-purple-500" title="Filters active" />
         )}
         <svg className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -137,9 +151,9 @@ export default function RunSelector({
           <div className="fixed inset-0 z-30" onClick={handleClose} />
 
           {/* Dropdown Panel */}
-          <div className="absolute top-full left-0 mt-1 z-40 w-[420px] rounded-lg border border-gray-700 bg-gray-800 shadow-xl flex flex-col max-h-[80vh]">
-            {/* Search & Filters — sticky top */}
-            <div className="p-3 border-b border-gray-700/50 space-y-2.5 shrink-0">
+          <div className="absolute top-full left-0 mt-1 z-40 w-[420px] rounded-xl border border-white/[0.08] backdrop-blur-xl bg-[#0a0a1a]/90 shadow-2xl flex flex-col max-h-[80vh]">
+            {/* Search & Filters -- sticky top */}
+            <div className="p-3 border-b border-white/[0.06] space-y-2.5 shrink-0">
               {/* Search Input */}
               <div className="relative">
                 <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,8 +164,8 @@ export default function RunSelector({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by prompt, title, or run ID…"
-                  className="w-full bg-gray-900 text-gray-300 text-sm rounded-md pl-8 pr-8 py-1.5 border border-gray-700 focus:border-blue-500 focus:outline-none placeholder:text-gray-500"
+                  placeholder="Search by prompt, title, or run ID..."
+                  className="w-full backdrop-blur-sm bg-white/[0.04] text-gray-300 text-sm rounded-lg pl-8 pr-8 py-1.5 border border-white/[0.08] focus:border-purple-500/50 focus:outline-none placeholder:text-gray-600"
                 />
                 {searchQuery && (
                   <button
@@ -173,14 +187,14 @@ export default function RunSelector({
                     <button
                       key={mode}
                       onClick={() => setModeFilter(mode)}
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all ${
                         modeFilter === mode
                           ? mode === "skill"
-                            ? "bg-purple-500/30 text-purple-300 border border-purple-500/50"
+                            ? "bg-purple-500/25 text-purple-300 border border-purple-500/40"
                             : mode === "raw"
-                            ? "bg-gray-600 text-gray-200 border border-gray-500"
-                            : "bg-blue-500/30 text-blue-300 border border-blue-500/50"
-                          : "bg-gray-900 text-gray-500 border border-gray-700 hover:border-gray-600 hover:text-gray-400"
+                            ? "bg-white/[0.1] text-gray-200 border border-white/[0.15]"
+                            : "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                          : "bg-white/[0.03] text-gray-500 border border-white/[0.06] hover:border-white/[0.12] hover:text-gray-400"
                       }`}
                     >
                       {mode === "all" ? "All" : mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -190,22 +204,45 @@ export default function RunSelector({
 
                 {/* Model Filter Dropdown */}
                 {allModels.length > 0 && (
-                  <select
-                    value={modelFilter ?? ""}
-                    onChange={(e) => setModelFilter(e.target.value || null)}
-                    className="bg-gray-900 text-xs text-gray-400 rounded-full px-2 py-0.5 border border-gray-700 focus:border-blue-500 focus:outline-none hover:border-gray-600 cursor-pointer appearance-none pr-5"
-                    style={{
-                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                      backgroundPosition: "right 4px center",
-                      backgroundRepeat: "no-repeat",
-                      backgroundSize: "14px",
-                    }}
-                  >
-                    <option value="">Any model</option>
-                    {allModels.map((m) => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
+                  <div ref={modelDropdownRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+                      className="flex items-center gap-1 backdrop-blur-sm bg-white/[0.04] text-xs text-gray-400 rounded-full px-2 py-0.5 border border-white/[0.08] hover:border-white/[0.12] cursor-pointer transition-all"
+                    >
+                      <span className="truncate max-w-[120px]">{modelFilter ?? "Any model"}</span>
+                      <svg className={`w-3 h-3 shrink-0 transition-transform ${modelDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {modelDropdownOpen && (
+                      <div className="absolute z-50 mt-1 left-0 min-w-[200px] rounded-lg backdrop-blur-xl bg-[#0a0a1a]/95 border border-white/[0.1] shadow-2xl max-h-48 overflow-auto">
+                        <div
+                          onClick={() => { setModelFilter(null); setModelDropdownOpen(false); }}
+                          className={`px-3 py-1.5 text-xs cursor-pointer transition-colors ${
+                            modelFilter === null
+                              ? "bg-purple-500/15 text-purple-300"
+                              : "text-gray-300 hover:bg-white/[0.08]"
+                          }`}
+                        >
+                          Any model
+                        </div>
+                        {allModels.map((m) => (
+                          <div
+                            key={m}
+                            onClick={() => { setModelFilter(m); setModelDropdownOpen(false); }}
+                            className={`px-3 py-1.5 text-xs cursor-pointer transition-colors border-t border-white/[0.04] truncate ${
+                              modelFilter === m
+                                ? "bg-purple-500/15 text-purple-300"
+                                : "text-gray-300 hover:bg-white/[0.08]"
+                            }`}
+                          >
+                            {m}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Spacer */}
@@ -233,14 +270,14 @@ export default function RunSelector({
               </div>
             </div>
 
-            {/* Run List — scrollable */}
+            {/* Run List -- scrollable */}
             <div className="overflow-auto flex-1">
               {filteredRuns.length === 0 ? (
                 <div className="px-4 py-8 text-center">
                   <p className="text-sm text-gray-500">No matching runs</p>
                   <button
                     onClick={clearFilters}
-                    className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    className="mt-2 text-xs text-purple-400 hover:text-purple-300 transition-colors"
                   >
                     Clear filters
                   </button>
@@ -253,10 +290,10 @@ export default function RunSelector({
                       onSelect(run.id);
                       handleClose();
                     }}
-                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-gray-700/50 last:border-b-0 ${
+                    className={`flex items-start gap-3 px-4 py-3 cursor-pointer transition-all border-b border-white/[0.04] last:border-b-0 ${
                       run.id === currentRunId
-                        ? "bg-blue-600/10 text-white"
-                        : "hover:bg-gray-700/50 text-gray-300"
+                        ? "bg-purple-500/10 text-white"
+                        : "hover:bg-white/[0.04] text-gray-300"
                     }`}
                   >
                     <div className="flex-1 min-w-0">
@@ -267,7 +304,7 @@ export default function RunSelector({
                         <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
                           run.mode === "skill"
                             ? "bg-purple-500/20 text-purple-300"
-                            : "bg-gray-700 text-gray-400"
+                            : "bg-white/[0.06] text-gray-400"
                         }`}>
                           {run.mode}
                         </span>
@@ -284,10 +321,10 @@ export default function RunSelector({
                     </div>
                     <button
                       onClick={(e) => handleDelete(e, run.id)}
-                      className={`shrink-0 p-1 rounded transition-colors ${
+                      className={`shrink-0 p-1 rounded transition-all ${
                         deleteConfirm === run.id
                           ? "bg-red-600 text-white"
-                          : "text-gray-500 hover:text-red-400 hover:bg-gray-700"
+                          : "text-gray-500 hover:text-red-400 hover:bg-white/[0.06]"
                       }`}
                       title={deleteConfirm === run.id ? "Click again to confirm" : "Delete run"}
                     >
