@@ -46,7 +46,7 @@ export interface ResumableJob {
 }
 
 interface UseBackgroundGenerationOptions {
-  onComplete?: (runId: string) => void;
+  onComplete?: (runId: string) => void | Promise<void>;
 }
 
 export function useBackgroundGeneration(
@@ -471,7 +471,11 @@ export function useBackgroundGeneration(
 
         // Notify parent after brief delay
         const completedRunId = finalRun.id;
-        setTimeout(() => {
+        setTimeout(async () => {
+          // Await onComplete BEFORE clearing partialRun so displayRun
+          // keeps showing live data until currentRun is refreshed from IndexedDB
+          await options?.onComplete?.(completedRunId);
+
           setActiveRunId(null);
           setPartialRun(null);
           partialRunRef.current = null;
@@ -481,7 +485,6 @@ export function useBackgroundGeneration(
             current: 0,
             total: 0,
           });
-          options?.onComplete?.(completedRunId);
         }, 1500);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {

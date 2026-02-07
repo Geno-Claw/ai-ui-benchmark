@@ -50,8 +50,13 @@ export default function Home() {
   }, []);
 
   const handleGenerateComplete = useCallback(
-    (runId: string) => {
-      fetchRuns().then(() => setCurrentRunId(runId));
+    async (runId: string) => {
+      await fetchRuns();
+      // Force reload from IndexedDB — currentRunId is likely already set to
+      // runId (via the activeRunId sync effect), so the useEffect won't re-fire.
+      const data = await dbLoadRun(runId);
+      if (data) setCurrentRun(data);
+      setCurrentRunId(runId);
     },
     [fetchRuns]
   );
