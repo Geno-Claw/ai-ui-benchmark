@@ -43,7 +43,7 @@ export async function callOpenRouter(
         headers: {
           "Authorization": `Bearer ${options.apiKey}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "http://localhost:3000",
+          "HTTP-Referer": typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
           "X-Title": "AI UI Benchmark",
         },
         body: JSON.stringify(body),

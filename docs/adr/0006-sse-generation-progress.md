@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-0007](0007-static-client-side-app.md)
 
 ## Context
 
